@@ -27,12 +27,12 @@ State = Literal[
 @dataclass
 class PoEEndpoint(SwitchOSEndpoint):
     """Represents the endpoint providing POE information for each individual port."""
-    out: List[PoEOut] = field(metadata={"name": "i01", "type": "option", "options": PoEOut}, default=None)
-    priority: List[int] = field(metadata={"name": "i02", "type": "int"}, default=None)
-    voltageLevel: List[VoltageLevel] = field(metadata={"name": "i03", "type": "option", "options": VoltageLevel}, default=None)
-    lldpEnabled: List[bool] = field(metadata={"name": "i0a", "type": "bool"}, default=None)
-    lldpPower: List[float] = field(metadata={"name": "i0b", "type": "int", "scale": 10}, default=None)
-    state: List[State] = field(metadata={"name": "i04", "type": "option", "options": State}, default=None)
-    current: List[int] = field(metadata={"name": "i05", "type": "int"}, default=None)
-    voltage: List[float] = field(metadata={"name": "i06", "type": "int", "scale": 10}, default=None)
-    power: List[float] = field(metadata={"name": "i07", "type": "int", "scale": 10}, default=None)
+    out: List[PoEOut] = field(metadata={"name": ["poe", "i01"], "type": "option", "options": PoEOut}, default=None)
+    priority: List[int] = field(metadata={"name": ["prio", "i02"], "type": "int"}, default=None)
+    voltageLevel: List[VoltageLevel] = field(metadata={"name": ["lvl", "i03"], "type": "option", "options": VoltageLevel}, default=None)
+    lldpEnabled: List[bool] = field(metadata={"name": ["lldp", "i0a"], "type": "bool"}, default=None)
+    lldpPower: List[float] = field(metadata={"name": ["ldpw", "i0b"], "type": "int", "scale": 10}, default=None)
+    state: List[State] = field(metadata={"name": ["poes", "i04"], "type": "option", "options": State}, default=None)
+    current: List[int] = field(metadata={"name": ["curr", "i05"], "type": "int"}, default=None)
+    voltage: List[float] = field(metadata={"name": ["volt", "i06"], "type": "int", "scale": 10}, default=None)
+    power: List[float] = field(metadata={"name": ["pwr", "i07"], "type": "int", "scale": 10}, default=None)
