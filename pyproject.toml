@@ -1,7 +1,7 @@
 [project]
-name = "python-swos-lite"
+name = "python-switchos"
 version = "0.0.5"
-description = "Python library to interact with MikroTik SwitchOS Lite"
+description = "Python library to interact with MikroTik SwitchOS and SwitchOS Lite"
 authors = [
   { name = "Robert Pattis" },
 ]
@@ -22,7 +22,7 @@ dependencies = [
 aiohttp = ["aiohttp >= 3.12"]
 httpx = ["httpx >= 0.28"]
 [project.urls]
-Homepage = "https://github.com/probert94/python-swos-lite"
+Homepage = "https://github.com/probert94/python-switchos"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

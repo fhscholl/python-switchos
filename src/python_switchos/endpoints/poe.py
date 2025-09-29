@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Literal
-from python_swos_lite.endpoint import SwOSLiteEndpoint, endpoint
+from python_switchos.endpoint import SwitchOSEndpoint, endpoint
 
 # PoE output options matching the API’s integer order
 PoEOut = Literal["on", "off", "auto"]
@@ -25,7 +25,7 @@ State = Literal[
 
 @endpoint("poe.b")
 @dataclass
-class PoEEndpoint(SwOSLiteEndpoint):
+class PoEEndpoint(SwitchOSEndpoint):
     """Represents the endpoint providing POE information for each individual port."""
     out: List[PoEOut] = field(metadata={"name": "i01", "type": "option", "options": PoEOut}, default=None)
     priority: List[int] = field(metadata={"name": "i02", "type": "int"}, default=None)

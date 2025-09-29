@@ -2,10 +2,10 @@ from typing import Any, Type, TypeVar
 from aiohttp import ClientSession
 from urllib.parse import urljoin
 
-from python_swos_lite.endpoint import SwOSLiteEndpoint, readDataclass
-from python_swos_lite.http import HttpClient, createHttpClient
+from python_switchos.endpoint import SwitchOSEndpoint, readDataclass
+from python_switchos.http import HttpClient, createHttpClient
 
-T = TypeVar("T", bound=SwOSLiteEndpoint)
+T = TypeVar("T", bound=SwitchOSEndpoint)
 
 class Client:
     """Client to connect to the available endpoints"""

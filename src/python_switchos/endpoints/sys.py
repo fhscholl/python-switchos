@@ -1,13 +1,13 @@
 from dataclasses import dataclass, field
 from typing import Literal
-from python_swos_lite.endpoint import SwOSLiteEndpoint, endpoint
+from python_switchos.endpoint import SwitchOSEndpoint, endpoint
 
 # Address aquistion options matching the API’s integer order
 AddressAquistion = Literal["DHCP_FALLBACK", "STATIC", "DHCP"]
 
 @endpoint("sys.b")
 @dataclass
-class SystemEndpoint(SwOSLiteEndpoint):
+class SystemEndpoint(SwitchOSEndpoint):
     """Represents the endpoint with system information."""
 
     # General

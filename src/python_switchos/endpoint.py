@@ -1,6 +1,6 @@
 from dataclasses import fields, is_dataclass
 from typing import ClassVar, Literal, cast, List, Type, TypeVar
-from python_swos_lite.utils import hex_to_bool_list, hex_to_ip, hex_to_mac, hex_to_option, hex_to_str, str_to_json
+from python_switchos.utils import hex_to_bool_list, hex_to_ip, hex_to_mac, hex_to_option, hex_to_str, str_to_json
 
 def endpoint(path: str):
     """Decorator to add an endpoint path to a class."""
@@ -9,11 +9,11 @@ def endpoint(path: str):
         return cls
     return decorator
 
-class SwOSLiteEndpoint:
+class SwitchOSEndpoint:
     """Represents an abstract endpoint of SwitchOS Lite."""
     endpoint_path: ClassVar[str]
 
-T = TypeVar("T", bound=SwOSLiteEndpoint)
+T = TypeVar("T", bound=SwitchOSEndpoint)
 
 FieldType = Literal["bool", "str"]
 

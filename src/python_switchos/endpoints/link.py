@@ -1,13 +1,13 @@
 from dataclasses import dataclass, field
 from typing import List, Literal
-from python_swos_lite.endpoint import SwOSLiteEndpoint, endpoint
+from python_switchos.endpoint import SwitchOSEndpoint, endpoint
 
 # Speed options matching the API’s integer order
 Speed = Literal["10M", "100M", "1G", "10G", "200M", "2.5G", "5G", None]
 
 @endpoint("link.b")
 @dataclass
-class LinkEndpoint(SwOSLiteEndpoint):
+class LinkEndpoint(SwitchOSEndpoint):
     """Represents the endpoint providing basic information for each individual port."""
     enabled: List[bool] = field(metadata={"name": "i01", "type": "bool"})
     name: List[str] = field(metadata={"name": "i0a", "type": "str"})

@@ -1,5 +1,5 @@
-# python-swos-lite
-Python library to interact with MikroTik SwitchOS Lite
+# python-switchos
+Python library to interact with MikroTik SwitchOS and SwitchOS Lite
 
 ## Features
 
@@ -16,7 +16,7 @@ Python library to interact with MikroTik SwitchOS Lite
 Install via pip:
 
 ```bash
-pip install python-swos-lite
+pip install python-switchos
 ```
 
 > Requires Python 3.10 or higher
@@ -50,10 +50,11 @@ async def main(host, user, password):
 
 ## Supported Devices
 
-This library targets MikroTik switches running **SwitchOS Lite** and has been tested with:
-- MikroTik CSS610-8P-2S+ running Switch OS Lite 2.19
+This library targets MikroTik switches running **SwitchOS** or **SwitchOS Lite** and has been tested with:
+- Mikrotik CRS326-24G-2S+ running Switch OS 2.18
+- MikroTik CSS610-8P-2S+ running Switch OS Lite 2.19 and 2.20
 
-Other models with SwitchOS Lite may also work.
+Other models with SwitchOS or SwitchOS Lite may also work.
 
 ## License
 
