@@ -28,6 +28,6 @@ class SystemEndpoint(SwitchOSEndpoint):
     psu1Voltage: int = field(metadata={"name": ["p1v", "i15"], "type": "int", "scale": 100}, default=None)
     psu2Current: int = field(metadata={"name": ["p2c", "i1f"], "type": "int"}, default=None)
     psu2Voltage: int = field(metadata={"name": ["p2v", "i1e"], "type": "int", "scale": 100}, default=None)
-    psu1Power: int = field(metadata={"name": ["p1p"], "type": "int"}, default=None)
-    psu2Power: int = field(metadata={"name": ["p2p"], "type": "int", "scale": 100}, default=None)
+    psu1Power: int = field(metadata={"name": ["p1p"], "type": "int", "scale": 10}, default=None)
+    psu2Power: int = field(metadata={"name": ["p2p"], "type": "int", "scale": 10}, default=None)
     power_consumption: int = field(metadata={"name": ["i26"], "type": "int", "scale": 10}, default=None)
