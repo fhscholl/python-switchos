@@ -9,7 +9,7 @@ import pytest
 from dataclasses import asdict
 from typing import get_args
 from python_switchos.endpoint import readDataclass
-from python_switchos.endpoints.link import LinkEndpoint, Speed
+from python_switchos.endpoints.link import LinkEndpoint, LinkState, Speed
 
 
 class TestLinkEndpointParsing:
@@ -48,10 +48,11 @@ class TestLinkEndpointParsing:
         valid = set(get_args(Speed)) | {None}
         assert all(v in valid for v in result.man_speed)
 
-    def test_link_state_is_bool_list(self, link_response):
+    def test_link_state_values_are_valid(self, link_response):
         result = readDataclass(LinkEndpoint, link_response)
         assert isinstance(result.link_state, list)
-        assert all(isinstance(v, bool) for v in result.link_state)
+        valid = set(get_args(LinkState))
+        assert all(v in valid for v in result.link_state)
 
     def test_full_duplex_is_bool_list(self, link_response):
         result = readDataclass(LinkEndpoint, link_response)
@@ -99,22 +100,6 @@ class TestLinkEndpointExpectedValues:
             )
 
 
-class TestLinkEndpointValidationIssues:
-    """Tests documenting known validation issues from VALIDATION.md."""
-
-    @pytest.mark.skip(
-        reason="ENHANCEMENT: link_state (i06) uses bool type but engine.js uses "
-               "M:1 bitshift with 4-state option [no link, link on, no link, link paused]. "
-               "Requires compound type (i06+i15) implementation. "
-               "Bool is correct for the common case (link on / no link)."
-    )
-    def test_link_state_should_be_4state_option(self, link_response):
-        """link_state should return 4-state values, not booleans."""
-        result = readDataclass(LinkEndpoint, link_response)
-        valid_states = {"no link", "link on", "link paused"}
-        assert all(v in valid_states for v in result.link_state)
-
-
 class TestLinkEndpointMissingFields:
     """Document fields present in engine.js link.b but missing from LinkEndpoint."""
 
@@ -126,7 +111,6 @@ class TestLinkEndpointMissingFields:
         ("i11", "cable_pairs"),
         ("i13", "flow_control_status"),
         ("i14", "flow_control_status_high_bit"),
-        ("i15", "link_state_high_bit"),
     ])
     def test_link_missing_fields(self, field_id, field_name):
         pytest.skip(
