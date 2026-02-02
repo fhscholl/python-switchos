@@ -1,11 +1,12 @@
-"""Tests for LinkEndpoint parsing against CSS610 fixture data.
+"""Tests for LinkEndpoint parsing against fixture data.
 
-Tests in TestLinkEndpointParsing run against every fixture file discovered
-in tests/fixtures/link_b/. Fixture-specific value assertions are in
-separate test classes.
+Generic type/structure tests and expected-value tests both run against
+every fixture file discovered in tests/fixtures/link_b/. Expected values
+come from companion .expected files (Python dict literals).
 """
 
 import pytest
+from dataclasses import asdict
 from typing import get_args
 from python_switchos.endpoint import readDataclass
 from python_switchos.endpoints.link import LinkEndpoint, Speed
@@ -85,78 +86,17 @@ class TestLinkEndpointParsing:
         assert len(lengths) == 1, f"Inconsistent port counts: {lengths}"
 
 
-class TestLinkEndpointFixture1:
-    """Value assertions specific to css610_response_1 (all ports enabled, 5 with link)."""
+class TestLinkEndpointExpectedValues:
+    """Compare parsed results against expected values from .expected files."""
 
-    @pytest.fixture()
-    def result(self):
-        from pathlib import Path
-        fixture = Path(__file__).parent / "fixtures" / "link_b" / "css610_response_1.txt"
-        return readDataclass(LinkEndpoint, fixture.read_text())
-
-    def test_enabled_all_true(self, result):
-        """i01:0x03ff -- all 10 ports enabled."""
-        assert all(v is True for v in result.enabled)
-
-    def test_port_count(self, result):
-        assert len(result.enabled) == 10
-
-    def test_name_values(self, result):
-        assert result.name[0] == "Port1"
-        assert result.name[7] == "Port8"
-        assert result.name[8] == "SFP1+"
-        assert result.name[9] == "SFP2+"
-
-    def test_auto_negotiation_all_true(self, result):
-        """i02:0x03ff -- all ports auto-negotiation enabled."""
-        assert all(v is True for v in result.auto_negotiation)
-
-    def test_speed_values(self, result):
-        """i08:[0x01,0x01,0x01,0x01,0x00,0x00,0x00,0x00,0x02,0x00]"""
-        assert result.speed[0] == "100M"
-        assert result.speed[4] == "10M"
-        assert result.speed[8] == "1G"
-
-    def test_man_speed_all_1g(self, result):
-        """i05 all 0x02 -> '1G' for all ports."""
-        assert all(v == "1G" for v in result.man_speed)
-
-    def test_full_duplex_bit_ordering(self, result):
-        """i07:0x011f = 0b100011111 -- ports 0-4 and 8 have duplex."""
-        expected = [True, True, True, True, True, False, False, False, True, False]
-        assert result.full_duplex == expected
-
-    def test_link_state(self, result):
-        """i06:0x021f -- ports 0-4 and 9 have link."""
-        expected = [True, True, True, True, True, False, False, False, False, True]
-        assert result.link_state == expected
-
-
-class TestLinkEndpointFixture2:
-    """Value assertions specific to css610_response_2 (port 3 disabled)."""
-
-    @pytest.fixture()
-    def result(self):
-        from pathlib import Path
-        fixture = Path(__file__).parent / "fixtures" / "link_b" / "css610_response_2.txt"
-        return readDataclass(LinkEndpoint, fixture.read_text())
-
-    def test_port3_disabled(self, result):
-        """i01:0x03fb -- port 3 (index 2) is disabled."""
-        assert result.enabled[2] is False
-
-    def test_other_ports_enabled(self, result):
-        """All ports except port 3 are enabled."""
-        for i, v in enumerate(result.enabled):
-            if i == 2:
-                assert v is False, "Port3 should be disabled"
-            else:
-                assert v is True, f"Port index {i} should be enabled"
-
-    def test_link_state(self, result):
-        """i06:0x0380 -- ports 7-9 (Port8, SFP1, SFP2) have link."""
-        expected = [False, False, False, False, False, False, False, True, True, True]
-        assert result.link_state == expected
+    def test_expected_values(self, link_response, link_expected):
+        if link_expected is None:
+            pytest.skip("No .expected file for this fixture")
+        result = asdict(readDataclass(LinkEndpoint, link_response))
+        for field, expected in link_expected.items():
+            assert result[field] == expected, (
+                f"Field {field!r}: expected {expected!r}, got {result[field]!r}"
+            )
 
 
 class TestLinkEndpointValidationIssues:

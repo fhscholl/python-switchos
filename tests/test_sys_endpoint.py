@@ -1,12 +1,13 @@
-"""Tests for SystemEndpoint parsing against CSS610 fixture data.
+"""Tests for SystemEndpoint parsing against fixture data.
 
-Tests in TestSystemEndpointParsing run against every fixture file discovered
-in tests/fixtures/sys_b/. Fixture-specific value assertions are in
-separate test classes.
+Generic type/structure tests and expected-value tests both run against
+every fixture file discovered in tests/fixtures/sys_b/. Expected values
+come from companion .expected files (Python dict literals).
 """
 
 import re
 import pytest
+from dataclasses import asdict
 from python_switchos.endpoint import readDataclass
 from python_switchos.endpoints.sys import SystemEndpoint, AddressAcquisition
 
@@ -65,84 +66,20 @@ class TestSystemEndpointParsing:
     def test_cpu_temp_is_int(self, sys_response):
         result = readDataclass(SystemEndpoint, sys_response)
         assert isinstance(result.cpu_temp, int)
-        # Reasonable range: -40 to 125 C
         assert -40 <= result.cpu_temp <= 125
 
 
-class TestSystemEndpointFixture1:
-    """Value assertions specific to css610_response_1."""
+class TestSystemEndpointExpectedValues:
+    """Compare parsed results against expected values from .expected files."""
 
-    @pytest.fixture()
-    def result(self):
-        from pathlib import Path
-        fixture = Path(__file__).parent / "fixtures" / "sys_b" / "css610_response_1.txt"
-        return readDataclass(SystemEndpoint, fixture.read_text())
-
-    def test_address_acquisition_value(self, result):
-        """i0a:0x00 -> first option 'DHCP_FALLBACK'."""
-        assert result.address_acquisition == "DHCP_FALLBACK"
-
-    def test_static_ip_value(self, result):
-        """i09:0x0101a8c0 -> 192.168.1.1."""
-        assert result.static_ip == "192.168.1.1"
-
-    def test_ip_value(self, result):
-        """i02:0x0101a8c0 -> 192.168.1.1."""
-        assert result.ip == "192.168.1.1"
-
-    def test_identity_value(self, result):
-        assert result.identity == "MockSwitch"
-
-    def test_serial_value(self, result):
-        assert result.serial == "MockSeril0"
-
-    def test_mac_value(self, result):
-        assert result.mac == "00:11:22:33:44:55"
-
-    def test_model_value(self, result):
-        assert result.model == "CSS610G"
-
-    def test_version_value(self, result):
-        assert result.version == "2.16"
-
-    def test_uptime_value(self, result):
-        """i01:0x0001a4f3 = 107763 seconds."""
-        assert result.uptime == 0x0001A4F3
-
-    def test_cpu_temp_value(self, result):
-        """i22:0x002d = 45 degrees."""
-        assert result.cpu_temp == 45
-
-
-class TestSystemEndpointPSUFields:
-    """PSU fields are for other device models (CRS series). They should be None for CSS610."""
-
-    @pytest.fixture()
-    def result(self):
-        from pathlib import Path
-        fixture = Path(__file__).parent / "fixtures" / "sys_b" / "css610_response_1.txt"
-        return readDataclass(SystemEndpoint, fixture.read_text())
-
-    def test_psu1_current_none(self, result):
-        assert result.psu1_current is None
-
-    def test_psu1_voltage_none(self, result):
-        assert result.psu1_voltage is None
-
-    def test_psu2_current_none(self, result):
-        assert result.psu2_current is None
-
-    def test_psu2_voltage_none(self, result):
-        assert result.psu2_voltage is None
-
-    def test_psu1_power_none(self, result):
-        assert result.psu1_power is None
-
-    def test_psu2_power_none(self, result):
-        assert result.psu2_power is None
-
-    def test_power_consumption_none(self, result):
-        assert result.power_consumption is None
+    def test_expected_values(self, sys_response, sys_expected):
+        if sys_expected is None:
+            pytest.skip("No .expected file for this fixture")
+        result = asdict(readDataclass(SystemEndpoint, sys_response))
+        for field, expected in sys_expected.items():
+            assert result[field] == expected, (
+                f"Field {field!r}: expected {expected!r}, got {result[field]!r}"
+            )
 
 
 class TestSystemEndpointMissingFields:
