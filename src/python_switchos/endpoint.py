@@ -15,7 +15,7 @@ class SwitchOSEndpoint:
 
 T = TypeVar("T", bound=SwitchOSEndpoint)
 
-FieldType = Literal["bool", "str"]
+FieldType = Literal["bool", "str", "scalar_bool"]
 
 def readDataclass(cls: Type[T], data: str) -> T:
     """Parses the given JSON-Like string and returns an instance of the given endpoint class."""
@@ -34,7 +34,10 @@ def readDataclass(cls: Type[T], data: str) -> T:
         type: FieldType = cast(FieldType, metadata.get("type"))
         match type:
             case "bool":
-                value = hex_to_bool_list(value, portCount)
+                length = metadata.get("ports", portCount)
+                value = hex_to_bool_list(value, length)
+            case "scalar_bool":
+                value = bool(value)
             case "int":
                 value = process_int(value, metadata.get("signed"), metadata.get("bits"), metadata.get("scale"))
             case "str":
