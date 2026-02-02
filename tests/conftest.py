@@ -4,6 +4,13 @@ from pathlib import Path
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
 
+# Map fixture parameter names to their endpoint directories
+_ENDPOINTS = {
+    "link": "link_b",
+    "sys": "sys_b",
+    "poe": "poe_b",
+}
+
 
 def discover_fixtures(endpoint_dir):
     """Discover response/expected fixture pairs in an endpoint directory.
@@ -34,34 +41,43 @@ def fixture_dir():
 
 def pytest_generate_tests(metafunc):
     """Auto-parametrize fixtures based on discovered response files."""
-    if "link_response" in metafunc.fixturenames or "link_expected" in metafunc.fixturenames:
-        pairs = discover_fixtures("link_b")
-        if "link_response" in metafunc.fixturenames and "link_expected" in metafunc.fixturenames:
+    for name, endpoint_dir in _ENDPOINTS.items():
+        response_param = f"{name}_response"
+        expected_param = f"{name}_expected"
+        has_response = response_param in metafunc.fixturenames
+        has_expected = expected_param in metafunc.fixturenames
+        if not has_response and not has_expected:
+            continue
+        pairs = discover_fixtures(endpoint_dir)
+        if not pairs:
+            # Mark with skip so tests are collected but clearly indicate no fixtures
+            if has_response and has_expected:
+                metafunc.parametrize(
+                    f"{response_param},{expected_param}",
+                    [pytest.param(None, None, marks=pytest.mark.skip(
+                        reason=f"No fixtures in {endpoint_dir}/"))],
+                    ids=["no_fixtures"],
+                    indirect=False,
+                )
+            elif has_response:
+                metafunc.parametrize(
+                    response_param,
+                    [pytest.param(None, marks=pytest.mark.skip(
+                        reason=f"No fixtures in {endpoint_dir}/"))],
+                    ids=["no_fixtures"],
+                    indirect=False,
+                )
+            continue
+        if has_response and has_expected:
             metafunc.parametrize(
-                "link_response,link_expected",
+                f"{response_param},{expected_param}",
                 [(r, e) for r, e, _ in pairs],
                 ids=[fid for _, _, fid in pairs],
                 indirect=False,
             )
-        elif "link_response" in metafunc.fixturenames:
+        elif has_response:
             metafunc.parametrize(
-                "link_response",
-                [r for r, _, _ in pairs],
-                ids=[fid for _, _, fid in pairs],
-                indirect=False,
-            )
-    if "sys_response" in metafunc.fixturenames or "sys_expected" in metafunc.fixturenames:
-        pairs = discover_fixtures("sys_b")
-        if "sys_response" in metafunc.fixturenames and "sys_expected" in metafunc.fixturenames:
-            metafunc.parametrize(
-                "sys_response,sys_expected",
-                [(r, e) for r, e, _ in pairs],
-                ids=[fid for _, _, fid in pairs],
-                indirect=False,
-            )
-        elif "sys_response" in metafunc.fixturenames:
-            metafunc.parametrize(
-                "sys_response",
+                response_param,
                 [r for r, _, _ in pairs],
                 ids=[fid for _, _, fid in pairs],
                 indirect=False,
