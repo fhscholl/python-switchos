@@ -26,31 +26,27 @@ class TestHexToBoolList:
         assert result == [False] * 10
 
     def test_basic_conversion(self):
-        """Binary 1010 should produce [False, True, False, True] (LSB-first)
-        or [True, False, True, False] (MSB-first).
-        Current implementation is MSB-first."""
+        """Binary 1010 = bit0=0, bit1=1, bit2=0, bit3=1 (LSB-first)."""
         result = hex_to_bool_list(0b1010, 4)
-        # MSB-first: "1010" -> [True, False, True, False]
-        assert result == [True, False, True, False]
+        assert result == [False, True, False, True]
 
-    def test_single_bit_msb(self):
+    def test_single_bit_lsb(self):
         """0x200 (bit 9 set) with 10 bits.
-        MSB-first: bit 9 is the highest bit, maps to index 0."""
+        LSB-first: bit 9 maps to index 9 (last port)."""
         result = hex_to_bool_list(0x200, 10)
-        assert result[0] is True
-        assert all(v is False for v in result[1:])
+        assert result[9] is True
+        assert all(v is False for v in result[:9])
 
     def test_returns_correct_length(self):
         result = hex_to_bool_list(0xFF, 8)
         assert len(result) == 8
 
     def test_padding(self):
-        """Value smaller than length gets zero-padded."""
+        """Value 1 = only bit 0 set. LSB-first: first element is True."""
         result = hex_to_bool_list(1, 8)
         assert len(result) == 8
-        # MSB-first: only last element is True
-        assert result[-1] is True
-        assert all(v is False for v in result[:-1])
+        assert result[0] is True
+        assert all(v is False for v in result[1:])
 
 
 # --- hex_to_str ---

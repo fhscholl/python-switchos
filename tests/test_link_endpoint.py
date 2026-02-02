@@ -31,13 +31,12 @@ class TestLinkEndpointParsing:
         assert all(isinstance(v, str) for v in result.name)
 
     def test_name_values(self, link_response):
-        """Fixture has Port1..Port8, SFP1+, SFP2+ (with trailing null bytes)."""
+        """Fixture has Port1..Port8, SFP1+, SFP2+."""
         result = readDataclass(LinkEndpoint, link_response)
-        # hex_to_str doesn't strip null bytes, so check with startswith
-        assert result.name[0].startswith("Port1")
-        assert result.name[7].startswith("Port8")
-        assert result.name[8].startswith("SFP1+")
-        assert result.name[9].startswith("SFP2+")
+        assert result.name[0] == "Port1"
+        assert result.name[7] == "Port8"
+        assert result.name[8] == "SFP1+"
+        assert result.name[9] == "SFP2+"
 
     def test_auto_negotiation_type_and_length(self, link_response):
         result = readDataclass(LinkEndpoint, link_response)
@@ -96,9 +95,10 @@ class TestLinkEndpointValidationIssues:
     """Tests documenting known validation issues from VALIDATION.md."""
 
     @pytest.mark.skip(
-        reason="CRITICAL: link_state (i06) uses bool type but engine.js uses "
+        reason="ENHANCEMENT: link_state (i06) uses bool type but engine.js uses "
                "M:1 bitshift with 4-state option [no link, link on, no link, link paused]. "
-               "Requires compound type implementation."
+               "Requires compound type (i06+i15) implementation. "
+               "Bool is correct for the common case (link on / no link)."
     )
     def test_link_state_should_be_4state_option(self, link_response):
         """link_state should return 4-state values, not booleans."""
@@ -107,16 +107,10 @@ class TestLinkEndpointValidationIssues:
         valid_states = {"no link", "link on", "link paused"}
         assert all(v in valid_states for v in result.link_state)
 
-    @pytest.mark.skip(
-        reason="CRITICAL: full_duplex (i07) uses bool type but engine.js uses "
-               "M:1 bitshift with 2-option map [no, yes]. Bit ordering is reversed "
-               "(MSB-first vs LSB-first). Same root cause as hex_to_bool_list issue."
-    )
     def test_full_duplex_bit_ordering(self, link_response):
-        """full_duplex bit ordering is reversed due to hex_to_bool_list MSB-first."""
+        """full_duplex (i07) with LSB-first bit ordering.
+        i07:0x011f = 0b100011111 -- ports 0-4 and 8 have duplex."""
         result = readDataclass(LinkEndpoint, link_response)
-        # i07:0x011f = 0b100011111 -- ports 0-4 and 8 have duplex
-        # With correct LSB-first: [T,T,T,T,T,F,F,F,T,F]
         expected = [True, True, True, True, True, False, False, False, True, False]
         assert result.full_duplex == expected
 

@@ -3,7 +3,7 @@
 import re
 import pytest
 from python_switchos.endpoint import readDataclass
-from python_switchos.endpoints.sys import SystemEndpoint, AddressAquistion
+from python_switchos.endpoints.sys import SystemEndpoint, AddressAcquisition
 
 
 class TestSystemEndpointParsing:
@@ -13,11 +13,11 @@ class TestSystemEndpointParsing:
         result = readDataclass(SystemEndpoint, sys_response)
         assert isinstance(result, SystemEndpoint)
 
-    def test_address_aquistion(self, sys_response):
+    def test_address_acquisition(self, sys_response):
         """Fixture i0a:0x00 -> first option 'DHCP_FALLBACK'."""
         result = readDataclass(SystemEndpoint, sys_response)
-        assert result.address_aquistion in ("DHCP_FALLBACK", "STATIC", "DHCP")
-        assert result.address_aquistion == "DHCP_FALLBACK"
+        assert result.address_acquisition in ("DHCP_FALLBACK", "STATIC", "DHCP")
+        assert result.address_acquisition == "DHCP_FALLBACK"
 
     def test_static_ip(self, sys_response):
         """Fixture i09:0x0101a8c0 -> 192.168.1.1."""
@@ -34,16 +34,16 @@ class TestSystemEndpointParsing:
         assert result.ip == "192.168.1.1"
 
     def test_identity(self, sys_response):
-        """Fixture i05 hex decodes to 'MockSwitch' (with trailing nulls)."""
+        """Fixture i05 hex decodes to 'MockSwitch'."""
         result = readDataclass(SystemEndpoint, sys_response)
         assert isinstance(result.identity, str)
-        assert result.identity.startswith("MockSwitch")
+        assert result.identity == "MockSwitch"
 
     def test_serial(self, sys_response):
-        """Fixture i04 hex decodes to 'MockSeril0' (with trailing nulls)."""
+        """Fixture i04 hex decodes to 'MockSeril0'."""
         result = readDataclass(SystemEndpoint, sys_response)
         assert isinstance(result.serial, str)
-        assert result.serial.startswith("MockSeril0")
+        assert result.serial == "MockSeril0"
 
     def test_mac(self, sys_response):
         """Fixture i03:'001122334455' -> '00:11:22:33:44:55'."""
@@ -53,16 +53,16 @@ class TestSystemEndpointParsing:
         assert result.mac == "00:11:22:33:44:55"
 
     def test_model(self, sys_response):
-        """Fixture i07 hex decodes to 'CSS610G' (with trailing nulls)."""
+        """Fixture i07 hex decodes to 'CSS610G'."""
         result = readDataclass(SystemEndpoint, sys_response)
         assert isinstance(result.model, str)
-        assert result.model.startswith("CSS610G")
+        assert result.model == "CSS610G"
 
     def test_version(self, sys_response):
-        """Fixture i06 hex decodes to '2.16' (with trailing nulls)."""
+        """Fixture i06 hex decodes to '2.16'."""
         result = readDataclass(SystemEndpoint, sys_response)
         assert isinstance(result.version, str)
-        assert result.version.startswith("2.16")
+        assert result.version == "2.16"
 
     def test_uptime(self, sys_response):
         """Fixture i01:0x0001a4f3 = 107763 seconds."""

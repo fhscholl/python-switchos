@@ -36,6 +36,14 @@ def readDataclass(cls: Type[T], data: str) -> T:
             case "bool":
                 value = hex_to_bool_list(value, portCount)
             case "int":
+                if metadata.get("signed") and metadata.get("bits"):
+                    bits = metadata["bits"]
+                    half = 1 << (bits - 1)
+                    full = 1 << bits
+                    if isinstance(value, list):
+                        value = [v - full if v >= half else v for v in cast(List[int], value)]
+                    elif value >= half:
+                        value = value - full
                 if isinstance(metadata.get("scale"), (int, float)):
                     if isinstance(value, list):
                         value = list(map(lambda v: v / metadata.get("scale"), cast(List[int], value)))

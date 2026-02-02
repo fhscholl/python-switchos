@@ -3,7 +3,7 @@ from typing import List, Literal
 from python_switchos.endpoint import SwitchOSEndpoint, endpoint
 
 # Speed options matching the API’s integer order
-Speed = Literal["10M", "100M", "1G", "10G", "200M", "2.5G", "5G", None]
+Speed = Literal["10M", "100M", "1G", "10G", "200M", "2.5G", "5G"]
 
 @endpoint("link.b")
 @dataclass
