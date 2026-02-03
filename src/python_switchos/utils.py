@@ -115,6 +115,22 @@ def hex_to_sfp_type(value: str) -> str:
     decoded = bytes.fromhex(value).decode().rstrip("\x00")
     return re.sub(r'\{([0-9a-fA-F]+)\}', lambda m: str(int(m.group(1), 16)), decoded)
 
+def hex_to_partner_mac(value: str) -> str:
+    """Converts a hex string to a MAC address, returning empty string for all-zeros.
+
+    Used for LACP partner MAC addresses where "000000000000" indicates no partner.
+
+    Args:
+        value: Hex string representing the MAC address.
+
+    Returns:
+        The MAC address formatted with colons, or empty string for all-zeros.
+    """
+    if value == "000000000000" or not value:
+        return ""
+    return hex_to_mac(value)
+
+
 def hex_to_dbm(value: int, scale: int = 10000) -> float:
     """Converts a raw SFP power reading to dBm.
 

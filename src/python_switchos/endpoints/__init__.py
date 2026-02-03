@@ -1,5 +1,6 @@
 from python_switchos.endpoints.host import DynamicHostEndpoint, HostEntry, HostEndpoint
 from python_switchos.endpoints.igmp import IgmpEntry, IgmpEndpoint
+from python_switchos.endpoints.lacp import LacpEndpoint, LacpMode
 from python_switchos.endpoints.link import LinkEndpoint
 from python_switchos.endpoints.sfp import SfpEndpoint
 from python_switchos.endpoints.snmp import SnmpEndpoint
@@ -12,6 +13,8 @@ __all__ = [
     "HostEndpoint",
     "IgmpEntry",
     "IgmpEndpoint",
+    "LacpEndpoint",
+    "LacpMode",
     "LinkEndpoint",
     "SfpEndpoint",
     "SnmpEndpoint",

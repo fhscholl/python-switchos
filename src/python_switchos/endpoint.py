@@ -7,6 +7,7 @@ from python_switchos.utils import (
     hex_to_ip,
     hex_to_mac,
     hex_to_option,
+    hex_to_partner_mac,
     hex_to_sfp_type,
     hex_to_str,
     process_int,
@@ -35,7 +36,7 @@ class SwitchOSEndpoint(SwitchOSDataclass):
 T = TypeVar("T", bound=SwitchOSEndpoint)
 E = TypeVar("E", bound=SwitchOSDataclass)
 
-FieldType = Literal["bool", "scalar_bool", "int", "str", "option", "mac", "ip", "sfp_type", "dbm"]
+FieldType = Literal["bool", "scalar_bool", "int", "str", "option", "mac", "partner_mac", "ip", "sfp_type", "dbm"]
 
 
 def _parse_dict(cls: Type[E], json_data: dict, port_count: int) -> E:
@@ -70,6 +71,11 @@ def _parse_dict(cls: Type[E], json_data: dict, port_count: int) -> E:
                     value = hex_to_option(value, options)
             case "mac":
                 value = hex_to_mac(value)
+            case "partner_mac":
+                if isinstance(value, list):
+                    value = [hex_to_partner_mac(v) for v in value]
+                else:
+                    value = hex_to_partner_mac(value)
             case "ip":
                 value = hex_to_ip(value)
             case "sfp_type":
