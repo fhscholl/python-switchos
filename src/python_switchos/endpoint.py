@@ -2,7 +2,9 @@ from dataclasses import fields, is_dataclass
 from typing import ClassVar, List, Literal, Type, TypeVar, cast
 
 from python_switchos.utils import (
+    hex_to_bitshift_option,
     hex_to_bool_list,
+    hex_to_bool_option,
     hex_to_dbm,
     hex_to_ip,
     hex_to_mac,
@@ -36,7 +38,7 @@ class SwitchOSEndpoint(SwitchOSDataclass):
 T = TypeVar("T", bound=SwitchOSEndpoint)
 E = TypeVar("E", bound=SwitchOSDataclass)
 
-FieldType = Literal["bool", "scalar_bool", "int", "str", "option", "mac", "partner_mac", "ip", "sfp_type", "dbm"]
+FieldType = Literal["bool", "scalar_bool", "int", "str", "option", "bool_option", "bitshift_option", "mac", "partner_mac", "ip", "sfp_type", "dbm"]
 
 
 def _parse_dict(cls: Type[E], json_data: dict, port_count: int) -> E:
@@ -69,6 +71,16 @@ def _parse_dict(cls: Type[E], json_data: dict, port_count: int) -> E:
                     value = [hex_to_option(v, options) for v in value]
                 else:
                     value = hex_to_option(value, options)
+            case "bool_option":
+                options = metadata.get("options")
+                length = metadata.get("ports", port_count)
+                value = hex_to_bool_option(value, options, length)
+            case "bitshift_option":
+                pair_name = metadata.get("pair")
+                pair_value = json_data.get(pair_name, 0)
+                options = metadata.get("options")
+                length = metadata.get("ports", port_count)
+                value = hex_to_bitshift_option(value, pair_value, options, length)
             case "mac":
                 value = hex_to_mac(value)
             case "partner_mac":

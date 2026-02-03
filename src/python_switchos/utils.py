@@ -131,6 +131,55 @@ def hex_to_partner_mac(value: str) -> str:
     return hex_to_mac(value)
 
 
+def hex_to_bool_option(value: int, options: Type, length: int) -> List[str]:
+    """Converts a bitmask to a list of option strings.
+
+    Each bit maps to the corresponding option: bit=0 -> options[0], bit=1 -> options[1].
+
+    Args:
+        value: The bitmask integer to convert.
+        options: A Literal type containing exactly two options [false_option, true_option].
+        length: Number of ports/bits to decode.
+
+    Returns:
+        List of option strings of the specified length.
+    """
+    opts = get_args(options)
+    return [opts[1] if ((value >> i) & 1) else opts[0] for i in range(length)]
+
+
+def hex_to_bitshift_option(low: int, high: int, options: Type, length: int) -> List[str]:
+    """Combines two bitmasks into 2-bit per-port option values.
+
+    For each port i, extracts bit i from both low and high bitmasks,
+    combines them into a 2-bit index (low_bit | (high_bit << 1)),
+    and looks up the corresponding option string.
+
+    Note: When options has duplicate values (e.g., ["shared", "point-to-point", "edge", "edge"]),
+    Python's Literal deduplicates them. This function handles this by clamping the index
+    to the valid range, since the last indices typically map to the same value.
+
+    Args:
+        low: The low-bit bitmask.
+        high: The high-bit bitmask.
+        options: A Literal type containing options indexed 0-3 (may be deduplicated).
+        length: Number of ports/bits to decode.
+
+    Returns:
+        List of option strings of the specified length.
+    """
+    opts = get_args(options)
+    result = []
+    for i in range(length):
+        low_bit = (low >> i) & 1
+        high_bit = (high >> i) & 1
+        index = low_bit | (high_bit << 1)
+        # Clamp index to valid range (handles Literal deduplication)
+        index = min(index, len(opts) - 1)
+        result.append(opts[index])
+    return result
+
+
 def hex_to_dbm(value: int, scale: int = 10000) -> float:
     """Converts a raw SFP power reading to dBm.
 
