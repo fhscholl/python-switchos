@@ -1,3 +1,4 @@
+import math
 import re
 import demjson3
 from typing import List, Type, get_args
@@ -98,3 +99,33 @@ def str_to_json(value: str) -> dict | None:
         Parsed JSON as a dictionary, or None if parsing fails.
     """
     return demjson3.decode(value)
+
+def hex_to_sfp_type(value: str) -> str:
+    """Converts a hex-encoded SFP type string to a human-readable string.
+
+    Decodes the hex string to UTF-8, strips null bytes, and replaces
+    {hex} patterns with their decimal equivalents (e.g., {0352} -> 850).
+
+    Args:
+        value: Hex string representing the SFP type.
+
+    Returns:
+        The decoded SFP type string with hex wavelengths converted to decimal.
+    """
+    decoded = bytes.fromhex(value).decode().rstrip("\x00")
+    return re.sub(r'\{([0-9a-fA-F]+)\}', lambda m: str(int(m.group(1), 16)), decoded)
+
+def hex_to_dbm(value: int, scale: int = 10000) -> float:
+    """Converts a raw SFP power reading to dBm.
+
+    Args:
+        value: Raw integer power value from SFP diagnostics.
+        scale: Divisor for scaling (default 10000 for microwatts).
+
+    Returns:
+        Power in dBm, rounded to 3 decimal places.
+        Returns 0.0 if value is 0 (copper SFP or no reading).
+    """
+    if value == 0:
+        return 0.0
+    return round(10 * math.log10(value / scale), 3)

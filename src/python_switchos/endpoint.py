@@ -1,6 +1,6 @@
 from dataclasses import fields, is_dataclass
 from typing import ClassVar, Literal, cast, List, Type, TypeVar
-from python_switchos.utils import hex_to_bool_list, hex_to_ip, hex_to_mac, hex_to_option, hex_to_str, process_int, str_to_json
+from python_switchos.utils import hex_to_bool_list, hex_to_dbm, hex_to_ip, hex_to_mac, hex_to_option, hex_to_sfp_type, hex_to_str, process_int, str_to_json
 
 def endpoint(path: str):
     """Decorator to add an endpoint path to a class."""
@@ -54,5 +54,16 @@ def readDataclass(cls: Type[T], data: str) -> T:
                 value = hex_to_mac(value)
             case "ip":
                 value = hex_to_ip(value)
+            case "sfp_type":
+                if isinstance(value, list):
+                    value = list(map(hex_to_sfp_type, cast(List[str], value)))
+                else:
+                    value = hex_to_sfp_type(value)
+            case "dbm":
+                scale = metadata.get("scale", 10000)
+                if isinstance(value, list):
+                    value = [hex_to_dbm(v, scale) for v in cast(List[int], value)]
+                else:
+                    value = hex_to_dbm(value, scale)
         dict[f.name] = value
     return cls(**dict)
