@@ -8,11 +8,13 @@ FIXTURE_DIR = Path(__file__).parent / "fixtures"
 _ENDPOINTS = {
     "dhost": "!dhost.b",
     "host": "host_b",
+    "igmp": "igmp_b",
     "link": "link_b",
     "poe": "poe_b",
     "sfp": "sfp_b",
     "snmp": "snmp_b",
     "sys": "sys_b",
+    "vlan": "vlan_b",
 }
 
 
