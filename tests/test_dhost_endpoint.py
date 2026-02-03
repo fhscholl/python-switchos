@@ -8,8 +8,7 @@ come from companion .expected files (Python dict literals).
 import pytest
 from dataclasses import asdict
 from python_switchos.endpoint import readListDataclass
-from python_switchos.endpoints.host import HostEntry
-from python_switchos.endpoints.dhost import DynamicHostEndpoint
+from python_switchos.endpoints.host import DynamicHostEndpoint, HostEntry
 
 
 class TestDynamicHostEndpointParsing:

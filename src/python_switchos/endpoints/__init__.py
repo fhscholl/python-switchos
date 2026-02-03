@@ -1,5 +1,4 @@
-from python_switchos.endpoints.dhost import DynamicHostEndpoint
-from python_switchos.endpoints.host import HostEntry, HostEndpoint
+from python_switchos.endpoints.host import DynamicHostEndpoint, HostEntry, HostEndpoint
 from python_switchos.endpoints.igmp import IgmpEntry, IgmpEndpoint
 from python_switchos.endpoints.link import LinkEndpoint
 from python_switchos.endpoints.sfp import SfpEndpoint

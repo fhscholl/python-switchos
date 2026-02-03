@@ -1,14 +1,15 @@
 from dataclasses import dataclass, field
 from typing import List
+
 from python_switchos.endpoint import SwitchOSDataclass, SwitchOSEndpoint, endpoint
 
 
 @dataclass
 class HostEntry(SwitchOSDataclass):
-    """Represents a single entry in the static or dynamic host table.
+    """A single entry in a host table (static or dynamic).
 
-    Fields:
-        port: The switch port number (0-indexed)
+    Attributes:
+        port: Switch port number (0-indexed)
         mac: MAC address in AA:BB:CC:DD:EE:FF format
     """
     port: int = field(metadata={"name": ["i02"], "type": "int"})
@@ -18,8 +19,18 @@ class HostEntry(SwitchOSDataclass):
 @endpoint("host.b")
 @dataclass
 class HostEndpoint(SwitchOSEndpoint):
-    """Represents the static host table endpoint.
+    """Static host table endpoint.
 
-    Contains a list of statically configured MAC address entries.
+    Contains statically configured MAC address entries.
+    """
+    entries: List[HostEntry] = field(default_factory=list)
+
+
+@endpoint("!dhost.b")
+@dataclass
+class DynamicHostEndpoint(SwitchOSEndpoint):
+    """Dynamic host table endpoint.
+
+    Contains dynamically learned MAC address entries.
     """
     entries: List[HostEntry] = field(default_factory=list)
