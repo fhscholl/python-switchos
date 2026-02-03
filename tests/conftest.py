@@ -9,6 +9,7 @@ _ENDPOINTS = {
     "dhost": "!dhost.b",
     "host": "host_b",
     "igmp": "igmp_b",
+    "lacp": "lacp_b",
     "link": "link_b",
     "poe": "poe_b",
     "sfp": "sfp_b",
