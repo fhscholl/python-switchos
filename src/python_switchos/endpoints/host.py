@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
 from typing import List
-from python_switchos.endpoint import SwitchOSEndpoint, endpoint
+from python_switchos.endpoint import SwitchOSDataclass, SwitchOSEndpoint, endpoint
 
 
 @dataclass
-class HostEntry:
+class HostEntry(SwitchOSDataclass):
     """Represents a single entry in the static or dynamic host table.
 
     Fields:

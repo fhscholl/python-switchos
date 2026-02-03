@@ -9,33 +9,36 @@ def endpoint(path: str):
         return cls
     return decorator
 
-class SwitchOSEndpoint:
-    """Represents an abstract endpoint of SwitchOS Lite."""
+
+class SwitchOSDataclass:
+    """Base class for SwitchOS data structures."""
+    pass
+
+
+class SwitchOSEndpoint(SwitchOSDataclass):
+    """Represents an endpoint of SwitchOS Lite with a path."""
     endpoint_path: ClassVar[str]
 
+
 T = TypeVar("T", bound=SwitchOSEndpoint)
-E = TypeVar("E")  # For entry classes that don't inherit from SwitchOSEndpoint
+E = TypeVar("E", bound=SwitchOSDataclass)
 
-FieldType = Literal["bool", "str", "scalar_bool"]
+FieldType = Literal["bool", "str", "scalar_bool", "int", "option", "mac", "ip", "sfp_type", "dbm"]
 
-def readDataclass(cls: Type[T], data: str) -> T:
-    """Parses the given JSON-Like string and returns an instance of the given endpoint class."""
-    if not is_dataclass(cls):
-        raise TypeError(f"{cls} is not a dataclass")
-    dict = {}
-    jsonData = str_to_json(data)
-    firstArrValue = next((v for v in jsonData.values() if isinstance(v, list)), None)
-    portCount: int = len(firstArrValue) if isinstance(firstArrValue, list) else 0
+
+def _parse_dict(cls: Type[E], json_data: dict, port_count: int) -> E:
+    """Internal: parse a dict into a dataclass instance."""
+    result_dict = {}
     for f in fields(cls):
         metadata = f.metadata
         names = metadata.get("name")
-        value = next((jsonData.get(name) for name in names if name in jsonData), None)
+        value = next((json_data.get(name) for name in names if name in json_data), None)
         if value is None:
             continue
-        type: FieldType = cast(FieldType, metadata.get("type"))
-        match type:
+        field_type: FieldType = cast(FieldType, metadata.get("type"))
+        match field_type:
             case "bool":
-                length = metadata.get("ports", portCount)
+                length = metadata.get("ports", port_count)
                 value = hex_to_bool_list(value, length)
             case "scalar_bool":
                 value = bool(value)
@@ -66,48 +69,29 @@ def readDataclass(cls: Type[T], data: str) -> T:
                     value = [hex_to_dbm(v, scale) for v in cast(List[int], value)]
                 else:
                     value = hex_to_dbm(value, scale)
-        dict[f.name] = value
-    return cls(**dict)
+        result_dict[f.name] = value
+    return cls(**result_dict)
+
+
+def readDataclass(cls: Type[T], data: str) -> T:
+    """Parses the given JSON-Like string and returns an instance of the given endpoint class."""
+    if not is_dataclass(cls):
+        raise TypeError(f"{cls} is not a dataclass")
+    json_data = str_to_json(data)
+    first_arr = next((v for v in json_data.values() if isinstance(v, list)), None)
+    port_count = len(first_arr) if first_arr else 10
+    return _parse_dict(cls, json_data, port_count)
 
 
 def readListDataclass(entry_cls: Type[E], data: str, port_count: int = 10) -> List[E]:
     """Parses a JSON array string and returns a list of entry dataclass instances.
 
-    Used for endpoints that return arrays of objects (e.g., host tables).
-    Entry classes don't need to inherit from SwitchOSEndpoint.
+    Used for endpoints that return arrays of objects (e.g., host tables, VLANs).
+    Entry classes should inherit from SwitchOSDataclass.
     """
     if not is_dataclass(entry_cls):
         raise TypeError(f"{entry_cls} is not a dataclass")
     json_array = str_to_json(data)
     if not json_array:
         return []
-    result = []
-    for item in json_array:
-        entry_dict = {}
-        for f in fields(entry_cls):
-            metadata = f.metadata
-            names = metadata.get("name")
-            value = next((item.get(name) for name in names if name in item), None)
-            if value is None:
-                continue
-            type: FieldType = cast(FieldType, metadata.get("type"))
-            match type:
-                case "bool":
-                    length = metadata.get("ports", port_count)
-                    value = hex_to_bool_list(value, length)
-                case "scalar_bool":
-                    value = bool(value)
-                case "int":
-                    value = process_int(value, metadata.get("signed"), metadata.get("bits"), metadata.get("scale"))
-                case "str":
-                    if isinstance(value, list):
-                        value = list(map(hex_to_str, cast(List[str], value)))
-                    else:
-                        value = hex_to_str(value)
-                case "mac":
-                    value = hex_to_mac(value)
-                case "ip":
-                    value = hex_to_ip(value)
-            entry_dict[f.name] = value
-        result.append(entry_cls(**entry_dict))
-    return result
+    return [_parse_dict(entry_cls, item, port_count) for item in json_array]

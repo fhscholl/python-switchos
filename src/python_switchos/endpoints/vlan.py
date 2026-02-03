@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
 from typing import List
-from python_switchos.endpoint import SwitchOSEndpoint, endpoint
+from python_switchos.endpoint import SwitchOSDataclass, SwitchOSEndpoint, endpoint
 
 
 @dataclass
-class VlanEntry:
+class VlanEntry(SwitchOSDataclass):
     """Represents a single VLAN configuration entry.
 
     Fields:

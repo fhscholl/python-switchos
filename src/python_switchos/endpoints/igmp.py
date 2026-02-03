@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
 from typing import List
-from python_switchos.endpoint import SwitchOSEndpoint, endpoint
+from python_switchos.endpoint import SwitchOSDataclass, SwitchOSEndpoint, endpoint
 
 
 @dataclass
-class IgmpEntry:
+class IgmpEntry(SwitchOSDataclass):
     """Represents a single IGMP snooping table entry.
 
     Fields:
