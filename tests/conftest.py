@@ -12,6 +12,7 @@ _ENDPOINTS = {
     "lacp": "lacp_b",
     "link": "link_b",
     "poe": "poe_b",
+    "rstp": "rstp_b",
     "sfp": "sfp_b",
     "snmp": "snmp_b",
     "sys": "sys_b",
