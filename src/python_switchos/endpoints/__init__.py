@@ -1,16 +1,22 @@
 from python_switchos.endpoints.dhost import DynamicHostEndpoint
 from python_switchos.endpoints.host import HostEntry, HostEndpoint
+from python_switchos.endpoints.igmp import IgmpEntry, IgmpEndpoint
 from python_switchos.endpoints.link import LinkEndpoint
 from python_switchos.endpoints.sfp import SfpEndpoint
 from python_switchos.endpoints.snmp import SnmpEndpoint
 from python_switchos.endpoints.sys import SystemEndpoint
+from python_switchos.endpoints.vlan import VlanEntry, VlanEndpoint
 
 __all__ = [
     "DynamicHostEndpoint",
     "HostEntry",
     "HostEndpoint",
+    "IgmpEntry",
+    "IgmpEndpoint",
     "LinkEndpoint",
     "SfpEndpoint",
     "SnmpEndpoint",
     "SystemEndpoint",
+    "VlanEntry",
+    "VlanEndpoint",
 ]
