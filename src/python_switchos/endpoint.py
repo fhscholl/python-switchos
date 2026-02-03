@@ -14,6 +14,7 @@ class SwitchOSEndpoint:
     endpoint_path: ClassVar[str]
 
 T = TypeVar("T", bound=SwitchOSEndpoint)
+E = TypeVar("E")  # For entry classes that don't inherit from SwitchOSEndpoint
 
 FieldType = Literal["bool", "str", "scalar_bool"]
 
@@ -67,3 +68,46 @@ def readDataclass(cls: Type[T], data: str) -> T:
                     value = hex_to_dbm(value, scale)
         dict[f.name] = value
     return cls(**dict)
+
+
+def readListDataclass(entry_cls: Type[E], data: str, port_count: int = 10) -> List[E]:
+    """Parses a JSON array string and returns a list of entry dataclass instances.
+
+    Used for endpoints that return arrays of objects (e.g., host tables).
+    Entry classes don't need to inherit from SwitchOSEndpoint.
+    """
+    if not is_dataclass(entry_cls):
+        raise TypeError(f"{entry_cls} is not a dataclass")
+    json_array = str_to_json(data)
+    if not json_array:
+        return []
+    result = []
+    for item in json_array:
+        entry_dict = {}
+        for f in fields(entry_cls):
+            metadata = f.metadata
+            names = metadata.get("name")
+            value = next((item.get(name) for name in names if name in item), None)
+            if value is None:
+                continue
+            type: FieldType = cast(FieldType, metadata.get("type"))
+            match type:
+                case "bool":
+                    length = metadata.get("ports", port_count)
+                    value = hex_to_bool_list(value, length)
+                case "scalar_bool":
+                    value = bool(value)
+                case "int":
+                    value = process_int(value, metadata.get("signed"), metadata.get("bits"), metadata.get("scale"))
+                case "str":
+                    if isinstance(value, list):
+                        value = list(map(hex_to_str, cast(List[str], value)))
+                    else:
+                        value = hex_to_str(value)
+                case "mac":
+                    value = hex_to_mac(value)
+                case "ip":
+                    value = hex_to_ip(value)
+            entry_dict[f.name] = value
+        result.append(entry_cls(**entry_dict))
+    return result
