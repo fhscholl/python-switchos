@@ -22,9 +22,9 @@ def hex_to_str(value: str) -> str:
         value: Hex string representing bytes.
 
     Returns:
-        The UTF-8 decoded string.
+        The UTF-8 decoded string with trailing null bytes and spaces stripped.
     """
-    return bytes.fromhex(value).decode().rstrip("\x00")
+    return bytes.fromhex(value).decode().rstrip("\x00").rstrip()
 
 def hex_to_option(value: int, type: Type) -> str | None:
     """Converts an integer into an option of a given Literal type.

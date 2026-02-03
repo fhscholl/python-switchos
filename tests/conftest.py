@@ -9,6 +9,7 @@ _ENDPOINTS = {
     "link": "link_b",
     "sys": "sys_b",
     "poe": "poe_b",
+    "sfp": "sfp_b",
 }
 
 
