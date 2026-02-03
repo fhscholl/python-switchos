@@ -6,10 +6,13 @@ FIXTURE_DIR = Path(__file__).parent / "fixtures"
 
 # Map fixture parameter names to their endpoint directories
 _ENDPOINTS = {
+    "dhost": "!dhost.b",
+    "host": "host_b",
     "link": "link_b",
-    "sys": "sys_b",
     "poe": "poe_b",
     "sfp": "sfp_b",
+    "snmp": "snmp_b",
+    "sys": "sys_b",
 }
 
 
