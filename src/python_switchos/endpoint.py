@@ -132,11 +132,12 @@ def readDataclass(cls: Type[T], data: str) -> T:
     return _parse_dict(cls, json_data, port_count)
 
 
-def readListDataclass(cls: Type[E], data: str, port_count: int = 10) -> List[E]:
+def readListDataclass(cls: Type[E], data: str) -> List[E]:
     """Parse a JSON array string into a list of dataclass instances.
 
     Used for endpoints that return arrays of objects (e.g., host tables, VLANs).
     Entry classes should inherit from SwitchOSDataclass.
+    Port count is auto-detected from array field lengths in the first entry.
     """
     if not is_dataclass(cls):
         raise TypeError(f"{cls} is not a dataclass")
@@ -144,5 +145,9 @@ def readListDataclass(cls: Type[E], data: str, port_count: int = 10) -> List[E]:
     json_array = str_to_json(data)
     if not json_array:
         return []
+
+    # Auto-detect port count from first entry's arrays (same as readDataclass)
+    first_arr = next((v for v in json_array[0].values() if isinstance(v, list)), None)
+    port_count = len(first_arr) if first_arr else 10
 
     return [_parse_dict(cls, item, port_count) for item in json_array]
