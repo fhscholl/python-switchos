@@ -14,6 +14,7 @@ _ENDPOINTS = {
     "poe": "poe_b",
     "rstp": "rstp_b",
     "sfp": "sfp_b",
+    "stats": "!stats_b",
     "snmp": "snmp_b",
     "sys": "sys_b",
     "vlan": "vlan_b",
