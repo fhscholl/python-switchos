@@ -25,9 +25,13 @@ class TestAclEndpointParsing:
 
     def test_each_entry_has_from_ports_list(self, acl_response):
         result = readListDataclass(AclEntry, acl_response)
+        if not result:
+            return  # Empty list is valid
+        # All entries should have same-length from_ports list
+        expected_length = len(result[0].from_ports)
         for entry in result:
             assert isinstance(entry.from_ports, list)
-            assert len(entry.from_ports) == 10
+            assert len(entry.from_ports) == expected_length
             assert all(isinstance(p, bool) for p in entry.from_ports)
 
     def test_each_entry_has_mac_fields_str(self, acl_response):

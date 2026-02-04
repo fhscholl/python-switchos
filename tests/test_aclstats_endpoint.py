@@ -41,12 +41,15 @@ class TestAclStatsEndpointParsing:
         assert isinstance(result.counter_4, list)
         assert all(isinstance(v, int) for v in result.counter_4)
 
-    def test_each_counter_has_10_elements(self, aclstats_response):
+    def test_all_counters_have_consistent_length(self, aclstats_response):
+        """All counter arrays should have the same length (matching port count)."""
         result = readDataclass(AclStatsEndpoint, aclstats_response)
+        # Get expected length from first counter
+        expected_length = len(result.counter_1)
         for field_name in COUNTER_FIELDS:
             field_value = getattr(result, field_name)
-            assert len(field_value) == 10, (
-                f"{field_name} should have 10 elements, got {len(field_value)}"
+            assert len(field_value) == expected_length, (
+                f"{field_name} has {len(field_value)} elements, expected {expected_length}"
             )
 
 

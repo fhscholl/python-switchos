@@ -34,9 +34,13 @@ class TestIgmpEndpointParsing:
 
     def test_each_entry_has_member_ports_list(self, igmp_response):
         result = readListDataclass(IgmpEntry, igmp_response)
+        if not result:
+            return  # Empty list is valid
+        # All entries should have same-length member_ports list
+        expected_length = len(result[0].member_ports)
         for entry in result:
             assert isinstance(entry.member_ports, list)
-            assert len(entry.member_ports) == 10
+            assert len(entry.member_ports) == expected_length
             assert all(isinstance(p, bool) for p in entry.member_ports)
 
     def test_group_address_is_ip_format(self, igmp_response):

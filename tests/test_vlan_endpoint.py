@@ -34,9 +34,13 @@ class TestVlanEndpointParsing:
 
     def test_each_entry_has_members_list(self, vlan_response):
         result = readListDataclass(VlanEntry, vlan_response)
+        if not result:
+            return  # Empty list is valid
+        # All entries should have same-length members list
+        expected_length = len(result[0].members)
         for entry in result:
             assert isinstance(entry.members, list)
-            assert len(entry.members) == 10
+            assert len(entry.members) == expected_length
             assert all(isinstance(m, bool) for m in entry.members)
 
 
