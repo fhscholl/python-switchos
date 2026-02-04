@@ -6,6 +6,7 @@ FIXTURE_DIR = Path(__file__).parent / "fixtures"
 
 # Map fixture parameter names to their endpoint directories
 _ENDPOINTS = {
+    "acl": "acl_b",
     "dhost": "!dhost.b",
     "fwd": "fwd_b",
     "host": "host_b",

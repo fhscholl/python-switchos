@@ -1,0 +1,28 @@
+[
+    {
+        "from_ports": [True, False, False, False, False, False, False, False, False, False],
+        "account_as": "none",
+        "mac_src": "AA:BB:CC:DD:EE:FF",
+        "mac_src_mask": "FF:FF:FF:FF:FF:FF",
+        "mac_dst": "",
+        "mac_dst_mask": "FF:FF:FF:FF:FF:FF",
+        "ethertype": 0,
+        "vlan": "any",
+        "vlan_id": 0,
+        "priority": 8,
+        "ip_src": "",
+        "ip_src_prefix": 0,
+        "ip_src_port": 0,
+        "ip_dst": "192.168.1.100",
+        "ip_dst_prefix": 0,
+        "ip_dst_port": 0,
+        "protocol": 0,
+        "dscp": 64,
+        "redirect_to": 3,
+        "mirror_to": 1,
+        "drop": False,
+        "set_vlan_id": 123,
+        "set_priority": 8,
+        "set_dscp": 64
+    }
+]
