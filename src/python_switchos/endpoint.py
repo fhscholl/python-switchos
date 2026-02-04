@@ -38,7 +38,7 @@ class SwitchOSEndpoint(SwitchOSDataclass):
 T = TypeVar("T", bound=SwitchOSEndpoint)
 E = TypeVar("E", bound=SwitchOSDataclass)
 
-FieldType = Literal["bool", "scalar_bool", "int", "str", "option", "bool_option", "bitshift_option", "mac", "partner_mac", "ip", "sfp_type", "dbm"]
+FieldType = Literal["bool", "scalar_bool", "int", "uint64", "str", "option", "bool_option", "bitshift_option", "mac", "partner_mac", "ip", "sfp_type", "dbm"]
 
 
 def _parse_dict(cls: Type[E], json_data: dict, port_count: int) -> E:
@@ -60,6 +60,14 @@ def _parse_dict(cls: Type[E], json_data: dict, port_count: int) -> E:
                 value = bool(value)
             case "int":
                 value = process_int(value, metadata.get("signed"), metadata.get("bits"), metadata.get("scale"))
+            case "uint64":
+                high_name = metadata.get("high")
+                high_value = json_data.get(high_name, 0)
+                if isinstance(value, list):
+                    high_list = high_value if isinstance(high_value, list) else [0] * len(value)
+                    value = [lo + hi * (2**32) for lo, hi in zip(value, high_list)]
+                else:
+                    value = value + high_value * (2**32)
             case "str":
                 if isinstance(value, list):
                     value = [hex_to_str(v) for v in value]
