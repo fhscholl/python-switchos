@@ -14,7 +14,7 @@ class IgmpEntry(SwitchOSDataclass):
     """
     group_address: str = field(metadata={"name": ["i01"], "type": "ip"})
     vlan: int = field(metadata={"name": ["i03"], "type": "int"})
-    member_ports: List[bool] = field(metadata={"name": ["i02"], "type": "bool", "ports": 10})
+    member_ports: List[bool] = field(metadata={"name": ["i02"], "type": "bool"})
 
 
 @endpoint("!igmp.b")

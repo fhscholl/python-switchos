@@ -14,7 +14,7 @@ class VlanEntry(SwitchOSDataclass):
     """
     vlan_id: int = field(metadata={"name": ["i01"], "type": "int"})
     igmp_snooping: bool = field(metadata={"name": ["i03"], "type": "scalar_bool"})
-    members: List[bool] = field(metadata={"name": ["i02"], "type": "bool", "ports": 10})
+    members: List[bool] = field(metadata={"name": ["i02"], "type": "bool"})
 
 
 @endpoint("vlan.b")

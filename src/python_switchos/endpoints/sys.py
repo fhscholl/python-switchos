@@ -41,20 +41,20 @@ class SystemEndpoint(SwitchOSEndpoint):
     # Access Control
     allow_from_ip: str = field(metadata={"name": ["i19"], "type": "ip"}, default=None)
     allow_from_mask: int = field(metadata={"name": ["i1a"], "type": "int"}, default=None)
-    allow_from_ports: List[bool] = field(metadata={"name": ["i12"], "type": "bool", "ports": 10}, default=None)
+    allow_from_ports: List[bool] = field(metadata={"name": ["i12"], "type": "bool"}, default=None)
     allow_from_vlan: int = field(metadata={"name": ["i1b"], "type": "int"}, default=None)
 
     # IGMP
     igmp_snooping: bool = field(metadata={"name": ["i17"], "type": "scalar_bool"}, default=None)
     igmp_querier: bool = field(metadata={"name": ["i29"], "type": "scalar_bool"}, default=None)
-    igmp_fast_leave: List[bool] = field(metadata={"name": ["i27"], "type": "bool", "ports": 10}, default=None)
+    igmp_fast_leave: List[bool] = field(metadata={"name": ["i27"], "type": "bool"}, default=None)
     igmp_version: IgmpVersion = field(metadata={"name": ["i28"], "type": "option", "options": IgmpVersion}, default=None)
 
     # MDP
-    mikrotik_discovery_protocol: List[bool] = field(metadata={"name": ["i08"], "type": "bool", "ports": 10}, default=None)
+    mikrotik_discovery_protocol: List[bool] = field(metadata={"name": ["i08"], "type": "bool"}, default=None)
 
     # DHCP & PPPoE Snooping
-    dhcp_snooping_trusted_ports: List[bool] = field(metadata={"name": ["i13"], "type": "bool", "ports": 10}, default=None)
+    dhcp_snooping_trusted_ports: List[bool] = field(metadata={"name": ["i13"], "type": "bool"}, default=None)
     dhcp_snooping_add_info_option: bool = field(metadata={"name": ["i14"], "type": "scalar_bool"}, default=None)
 
     # Health

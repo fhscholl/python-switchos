@@ -49,7 +49,7 @@ class AclEntry(SwitchOSDataclass):
             account_as: Counter to account packets to
     """
     # Port matching
-    from_ports: List[bool] = field(metadata={"name": ["i01"], "type": "bool", "ports": 10})
+    from_ports: List[bool] = field(metadata={"name": ["i01"], "type": "bool"})
 
     # L2 matching
     mac_src: str = field(metadata={"name": ["i02"], "type": "partner_mac"})
