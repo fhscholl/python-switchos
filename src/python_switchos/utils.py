@@ -131,6 +131,22 @@ def hex_to_partner_mac(value: str) -> str:
     return hex_to_mac(value)
 
 
+def hex_to_partner_ip(value: int) -> str:
+    """Converts an integer to an IP address, returning empty string for zero.
+
+    Used for ACL IP fields where 0 indicates no IP match criteria.
+
+    Args:
+        value: Integer representing the IPv4 address.
+
+    Returns:
+        The IPv4 address in dotted-decimal notation, or empty string for zero.
+    """
+    if value == 0:
+        return ""
+    return hex_to_ip(value)
+
+
 def hex_to_bool_option(value: int, options: Type, length: int) -> List[str]:
     """Converts a bitmask to a list of option strings.
 
