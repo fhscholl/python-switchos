@@ -52,7 +52,7 @@ async def main(host, user, password):
 
 This library targets MikroTik switches running **SwitchOS** or **SwitchOS Lite** and has been tested with:
 - Mikrotik CRS326-24G-2S+ running Switch OS 2.18
-- MikroTik CSS610-8P-2S+ running Switch OS Lite 2.19 and 2.20
+- MikroTik CSS610-8P-2S+ running Switch OS Lite 2.20 and 2.21
 
 Other models with SwitchOS or SwitchOS Lite may also work.
 
