@@ -1,0 +1,13 @@
+{
+    "vendor": ["OEM", "MikroTik"],
+    "part_number": ["10G-SFP+-SR", "S+RJ10"],
+    "revision": ["02", "2.16"],
+    "serial": ["SPF001234567", "SPF008765432"],
+    "date": ["22-04-08", "22-01-29"],
+    "type": ["850nm multi-mode fiber", "1m copper"],
+    "temperature": [46, 79],
+    "voltage": [3.243, 3.153],
+    "tx_bias": [6, 0],
+    "tx_power": [-2.698, 0.0],
+    "rx_power": [-3.856, 0.0]
+}

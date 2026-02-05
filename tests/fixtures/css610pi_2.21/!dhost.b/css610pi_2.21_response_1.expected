@@ -1,0 +1,22 @@
+[
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:01"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:02"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:03"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:04"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:05"},
+    {"port": 9, "mac": "A1:B2:C3:D4:E5:06"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:07"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:08"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:09"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:0A"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:0B"},
+    {"port": 7, "mac": "A1:B2:C3:D4:E5:0C"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:0D"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:0E"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:0F"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:10"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:11"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:12"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:13"},
+    {"port": 8, "mac": "A1:B2:C3:D4:E5:14"}
+]
