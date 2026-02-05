@@ -45,6 +45,51 @@ def discover_fixtures(endpoint_dir):
     return pairs
 
 
+def discover_all_fixtures(endpoint_dir):
+    """Discover fixtures across all device directories AND flat structure.
+
+    Searches both:
+    - fixtures/{endpoint_dir}/ (legacy flat structure)
+    - fixtures/{device_version}/{endpoint_dir}/ (new device-based structure)
+
+    Returns list of (response_text, expected_dict, fixture_id) tuples.
+    """
+    pairs = []
+
+    # Legacy flat structure
+    legacy_path = FIXTURE_DIR / endpoint_dir
+    if legacy_path.exists() and legacy_path.is_dir():
+        for response_file in sorted(legacy_path.glob("*_response_*.txt")):
+            expected_file = response_file.with_suffix(".expected")
+            response_text = response_file.read_text()
+            expected_dict = None
+            if expected_file.exists():
+                expected_dict = ast.literal_eval(expected_file.read_text())
+            pairs.append((response_text, expected_dict, response_file.stem))
+
+    # New device-based structure
+    for device_dir in sorted(FIXTURE_DIR.iterdir()):
+        if not device_dir.is_dir():
+            continue
+        # Skip if it looks like an endpoint dir (contains _b or .b)
+        if "_b" in device_dir.name or ".b" in device_dir.name:
+            continue
+        endpoint_path = device_dir / endpoint_dir
+        if not endpoint_path.exists():
+            continue
+        for response_file in sorted(endpoint_path.glob("*_response_*.txt")):
+            expected_file = response_file.with_suffix(".expected")
+            response_text = response_file.read_text()
+            expected_dict = None
+            if expected_file.exists():
+                expected_dict = ast.literal_eval(expected_file.read_text())
+            # Include device in fixture ID for clarity
+            fixture_id = f"{device_dir.name}/{response_file.stem}"
+            pairs.append((response_text, expected_dict, fixture_id))
+
+    return pairs
+
+
 @pytest.fixture
 def fixture_dir():
     """Return the path to the test fixtures directory."""
@@ -60,7 +105,7 @@ def pytest_generate_tests(metafunc):
         has_expected = expected_param in metafunc.fixturenames
         if not has_response and not has_expected:
             continue
-        pairs = discover_fixtures(endpoint_dir)
+        pairs = discover_all_fixtures(endpoint_dir)
         if not pairs:
             # Mark with skip so tests are collected but clearly indicate no fixtures
             if has_response and has_expected:
