@@ -1,7 +1,0 @@
-[
-    {
-        "group_address": "239.255.255.250",
-        "vlan": 1,
-        "member_ports": [False, False, False, False, False, False, False, False, True, False]
-    }
-]

@@ -1,5 +1,0 @@
-[{
-    i01: 'aabbccddeeff',
-    i02: 0x00
-}]
-

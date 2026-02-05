@@ -1,8 +1,0 @@
-{
-    "rstp": [True, True, True, True, True, True, True, True, True, True],
-    "mode": ["RSTP", "RSTP", "RSTP", "RSTP", "RSTP", "RSTP", "RSTP", "RSTP", "RSTP", "RSTP"],
-    "role": ["designated", "designated", "designated", "designated", "designated", "designated", "designated", "designated", "root", "designated"],
-    "root_path_cost": [0, 0, 0, 0, 0, 0, 0, 0, 2, 0],
-    "type": ["point-to-point", "point-to-point", "point-to-point", "point-to-point", "point-to-point", "point-to-point", "point-to-point", "edge", "point-to-point", "edge"],
-    "state": ["discarding", "discarding", "discarding", "discarding", "discarding", "discarding", "discarding", "forwarding", "forwarding", "forwarding"]
-}

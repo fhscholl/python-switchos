@@ -1,7 +1,0 @@
-[
-    {
-        "vlan_id": 123,
-        "igmp_snooping": False,
-        "members": [True, True, True, True, True, False, False, False, False, False]
-    }
-]
