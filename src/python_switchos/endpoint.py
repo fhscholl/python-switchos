@@ -32,8 +32,16 @@ class SwitchOSDataclass:
 
 
 class SwitchOSEndpoint(SwitchOSDataclass):
-    """Represents an endpoint of SwitchOS Lite with a path."""
+    """Represents an endpoint of SwitchOS Lite with a path.
+
+    Attributes:
+        endpoint_path: Primary endpoint path (e.g., "!stats.b")
+        endpoint_alternates: Optional list of alternate paths (e.g., ["stats.b"])
+                            for devices that use different conventions.
+                            SwOS Lite uses ! prefix, SwOS full 2.17+ omits it.
+    """
     endpoint_path: ClassVar[str]
+    endpoint_alternates: ClassVar[List[str]] = []
 
 
 T = TypeVar("T", bound=SwitchOSEndpoint)
