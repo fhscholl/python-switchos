@@ -5,6 +5,7 @@ from pathlib import Path
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
 
 # Map fixture parameter names to their endpoint directories
+# Some endpoints have alternate paths (e.g., stats.b vs !stats.b)
 _ENDPOINTS = {
     "acl": "acl_b",
     "aclstats": "!aclstats_b",
@@ -17,7 +18,7 @@ _ENDPOINTS = {
     "poe": "poe_b",
     "rstp": "rstp_b",
     "sfp": "sfp_b",
-    "stats": "!stats_b",
+    "stats": ["!stats_b", "stats_b"],  # SwOS Lite uses !stats.b, SwOS full 2.17+ uses stats.b
     "snmp": "snmp_b",
     "sys": "sys_b",
     "vlan": "vlan_b",
@@ -98,14 +99,19 @@ def fixture_dir():
 
 def pytest_generate_tests(metafunc):
     """Auto-parametrize fixtures based on discovered response files."""
-    for name, endpoint_dir in _ENDPOINTS.items():
+    for name, endpoint_dirs in _ENDPOINTS.items():
         response_param = f"{name}_response"
         expected_param = f"{name}_expected"
         has_response = response_param in metafunc.fixturenames
         has_expected = expected_param in metafunc.fixturenames
         if not has_response and not has_expected:
             continue
-        pairs = discover_all_fixtures(endpoint_dir)
+        # Handle both single directory and list of directories
+        if isinstance(endpoint_dirs, str):
+            endpoint_dirs = [endpoint_dirs]
+        pairs = []
+        for endpoint_dir in endpoint_dirs:
+            pairs.extend(discover_all_fixtures(endpoint_dir))
         if not pairs:
             # Mark with skip so tests are collected but clearly indicate no fixtures
             if has_response and has_expected:

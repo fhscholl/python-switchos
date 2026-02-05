@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Type, get_args, get_origin
 
 from tests.tools.compare_fields import (
-    ENDPOINT_CLASSES,
+    ALL_ENDPOINT_CLASSES,
     extract_field_ids,
     find_devices_with_endpoint,
     load_analysis_data,
@@ -40,6 +40,15 @@ ENDPOINT_DIR_MAP = {
     "acl.b": "acl_b",
     "!aclstats.b": "!aclstats_b",
     "poe.b": "poe_b",
+}
+
+# Endpoints that use list/array format (parse multiple entries)
+LIST_ENDPOINTS = {
+    "host.b",
+    "!dhost.b",
+    "!igmp.b",
+    "vlan.b",
+    "acl.b",
 }
 
 
@@ -69,6 +78,38 @@ def generate_swos_response(field_ids: List[str], port_count: int = 10) -> str:
     return "{" + ",".join(parts) + "}"
 
 
+def hex_encode_string(s: str, pad_to: int = 20) -> str:
+    """Encode a string as hex for SwOS format.
+
+    Args:
+        s: String to encode
+        pad_to: Pad to this many bytes with zeros
+
+    Returns:
+        Hex-encoded string (e.g., "Port1" -> "506f727431" + zeros)
+    """
+    hex_str = s.encode("ascii").hex()
+    # Pad to pad_to bytes (2 hex chars per byte)
+    return hex_str + "0" * (pad_to * 2 - len(hex_str))
+
+
+def generate_port_name(port_num: int, port_count: int) -> str:
+    """Generate a port name for synthetic fixtures.
+
+    Args:
+        port_num: Port number (1-based)
+        port_count: Total port count (for determining SFP port numbers)
+
+    Returns:
+        Port name like "Port1" or "SFP1+"
+    """
+    # Simple heuristic: last 2 ports are SFP on most devices
+    if port_num > port_count - 2 and port_count > 4:
+        sfp_num = port_num - (port_count - 2)
+        return f"SFP{sfp_num}+"
+    return f"Port{port_num}"
+
+
 def generate_swos_response_for_endpoint(
     endpoint_class: Type[SwitchOSDataclass],
     port_count: int = 10,
@@ -77,10 +118,10 @@ def generate_swos_response_for_endpoint(
     """Generate SwOS response for a specific endpoint class.
 
     Handles different field types appropriately:
-    - bool fields: bitmask (0x0000 for all false)
+    - bool fields: bitmask (all true by default)
     - int/float arrays: [0x00, 0x00, ...]
-    - str arrays: ['hex_encoded_string', ...]
-    - Scalar fields: single value (0x00 or 'hex_string')
+    - str arrays: ['hex_encoded_string', ...] with realistic values
+    - Scalar fields: single value with realistic data
 
     Args:
         endpoint_class: The endpoint dataclass type
@@ -112,26 +153,73 @@ def generate_swos_response_for_endpoint(
             hasattr(f.type, "__origin__") and f.type.__origin__ is list
         )
 
-        # Generate value based on type
-        if is_scalar or not is_list_field:
+        # Generate value based on type and field name
+        # Note: is_list_field takes precedence - even sys.b has some list fields
+        if not is_list_field:
             # Scalar value
-            if field_type in ("str", "mac"):
-                # 20-byte hex string (padded with zeros)
-                parts.append(f"{fid}:'{'00' * 20}'")
+            if field_type == "str":
+                # Generate realistic scalar strings
+                if f.name == "identity":
+                    parts.append(f"{fid}:'{hex_encode_string('TestSwitch')}'")
+                elif f.name == "serial":
+                    parts.append(f"{fid}:'{hex_encode_string('SN00000001')}'")
+                elif f.name == "model":
+                    parts.append(f"{fid}:'{hex_encode_string('CSS326')}'")
+                elif f.name == "version":
+                    parts.append(f"{fid}:'{hex_encode_string('2.18')}'")
+                else:
+                    parts.append(f"{fid}:'{hex_encode_string('Test')}'")
+            elif field_type == "mac":
+                # MAC: 00:11:22:33:44:55 as hex string
+                parts.append(f"{fid}:'001122334455'")
             elif field_type == "ip":
-                # IP as int (0.0.0.0)
-                parts.append(f"{fid}:0x00000000")
+                # IP: 192.168.1.1 as little-endian int
+                # 192.168.1.1 -> 0x0101a8c0
+                parts.append(f"{fid}:0x0101a8c0")
+            elif field_type == "scalar_bool":
+                parts.append(f"{fid}:0x01")
             else:
                 # Numeric
                 parts.append(f"{fid}:0x0000")
         else:
             # Array value
             if field_type == "str":
-                # Array of hex-encoded strings
-                arr = ",".join(f"'{'00' * 20}'" for _ in range(port_count))
+                # Generate realistic per-port strings
+                if "name" in f.name.lower():
+                    # Port names like Port1, Port2, SFP1+, etc.
+                    arr = ",".join(
+                        f"'{hex_encode_string(generate_port_name(i + 1, port_count))}'"
+                        for i in range(port_count)
+                    )
+                elif "vendor" in f.name.lower():
+                    arr = ",".join(f"'{hex_encode_string('Vendor')}'" for _ in range(port_count))
+                else:
+                    arr = ",".join(f"'{hex_encode_string('')}'" for _ in range(port_count))
+                parts.append(f"{fid}:[{arr}]")
+            elif field_type == "sfp_type":
+                # SFP type is also a hex-encoded string
+                arr = ",".join(f"'{hex_encode_string('')}'" for _ in range(port_count))
+                parts.append(f"{fid}:[{arr}]")
+            elif field_type == "mac" or field_type == "partner_mac":
+                # Array of MAC addresses
+                arr = ",".join("'001122334455'" for _ in range(port_count))
+                parts.append(f"{fid}:[{arr}]")
+            elif field_type == "ip" or field_type == "partner_ip":
+                # Array of IPs
+                arr = ",".join("0x0101a8c0" for _ in range(port_count))
                 parts.append(f"{fid}:[{arr}]")
             elif field_type == "bool":
-                # Bitmask (single hex value covering all ports)
+                # Bitmask - all true (all bits set)
+                # For 24 ports: 0xffffff, for 10 ports: 0x03ff
+                bitmask = (1 << port_count) - 1
+                parts.append(f"{fid}:0x{bitmask:x}")
+            elif field_type == "bool_option":
+                # Bool option - bitmask where 0=first option, 1=second option
+                # Default to all zeros (first option)
+                parts.append(f"{fid}:0x{'0' * ((port_count + 3) // 4)}")
+            elif field_type == "bitshift_option":
+                # Bitshift option - uses paired bitmasks for 2-bit values
+                # Default to all zeros (first option)
                 parts.append(f"{fid}:0x{'0' * ((port_count + 3) // 4)}")
             else:
                 # Numeric array
@@ -147,16 +235,135 @@ def generate_swos_response_for_endpoint(
             else:
                 parts.append(f"{high}:0x0000")
 
-        # Handle pair fields for bitshift_option
+        # Handle pair fields for bitshift_option (always a bitmask)
         pair = metadata.get("pair")
         if pair and isinstance(pair, str):
-            if is_list_field:
-                arr = ",".join("0x00" for _ in range(port_count))
-                parts.append(f"{pair}:[{arr}]")
-            else:
-                parts.append(f"{pair}:0x0000")
+            # Pair field is always a bitmask for bitshift_option
+            parts.append(f"{pair}:0x{'0' * ((port_count + 3) // 4)}")
 
     return "{" + ",".join(parts) + "}"
+
+
+def generate_list_response_for_entry(
+    entry_class: Type[SwitchOSDataclass],
+    port_count: int = 10,
+    num_entries: int = 1,
+) -> str:
+    """Generate SwOS list response for a list-based endpoint.
+
+    List endpoints return an array of entry objects: [{i01:..., i02:...}, ...]
+
+    Args:
+        entry_class: The entry dataclass type (e.g., HostEntry, VlanEntry)
+        port_count: Number of ports (for bool fields)
+        num_entries: Number of entries to generate
+
+    Returns:
+        SwOS format list string like "[{i01:..., i02:...}]"
+    """
+    entries = []
+    for _ in range(num_entries):
+        entry_parts = []
+        for f in fields(entry_class):
+            metadata = f.metadata
+            names = metadata.get("name", [])
+            field_type = metadata.get("type", "")
+
+            # Find primary field ID (iXX format)
+            fid = None
+            for name in names:
+                if name.startswith("i") and len(name) >= 2:
+                    fid = name
+                    break
+            if fid is None:
+                continue
+
+            # Determine if this is a list field
+            is_list_field = get_origin(f.type) is list or (
+                hasattr(f.type, "__origin__") and f.type.__origin__ is list
+            )
+
+            # Generate value based on type
+            if field_type == "str":
+                entry_parts.append(f"{fid}:'{hex_encode_string('')}'")
+            elif field_type == "mac":
+                entry_parts.append(f"{fid}:'001122334455'")
+            elif field_type == "partner_mac":
+                entry_parts.append(f"{fid}:'000000000000'")  # 0 = no partner
+            elif field_type == "ip":
+                entry_parts.append(f"{fid}:0x0101a8c0")  # 192.168.1.1
+            elif field_type == "partner_ip":
+                entry_parts.append(f"{fid}:0x00000000")  # 0 = any
+            elif field_type == "scalar_bool":
+                entry_parts.append(f"{fid}:0x01")
+            elif field_type == "bool" and is_list_field:
+                # Bitmask for ports
+                bitmask = (1 << port_count) - 1
+                entry_parts.append(f"{fid}:0x{bitmask:x}")
+            elif field_type == "option":
+                entry_parts.append(f"{fid}:0x00")  # First option
+            else:
+                entry_parts.append(f"{fid}:0x00")
+
+        entries.append("{" + ", ".join(entry_parts) + "}")
+
+    return "[" + ",\n".join(entries) + "]"
+
+
+def generate_list_expected_dict(
+    entry_class: Type[SwitchOSDataclass],
+    port_count: int = 10,
+    num_entries: int = 1,
+) -> List:
+    """Generate expected list for a list-based endpoint.
+
+    Returns format like: [{"port": 0, "mac": "..."}, ...]
+
+    Args:
+        entry_class: The entry dataclass type
+        port_count: Number of ports (for bool fields)
+        num_entries: Number of entries
+
+    Returns:
+        List of entry dicts
+    """
+    entries = []
+    for _ in range(num_entries):
+        entry = {}
+        for f in fields(entry_class):
+            metadata = f.metadata
+            field_type = metadata.get("type", "")
+
+            is_list_field = get_origin(f.type) is list or (
+                hasattr(f.type, "__origin__") and f.type.__origin__ is list
+            )
+
+            if field_type == "str":
+                entry[f.name] = ""
+            elif field_type == "mac":
+                entry[f.name] = "00:11:22:33:44:55"
+            elif field_type == "partner_mac":
+                entry[f.name] = ""  # Empty for no partner
+            elif field_type == "ip":
+                entry[f.name] = "192.168.1.1"
+            elif field_type == "partner_ip":
+                entry[f.name] = ""  # Empty for 0
+            elif field_type == "scalar_bool":
+                entry[f.name] = True
+            elif field_type == "bool" and is_list_field:
+                entry[f.name] = [True] * port_count
+            elif field_type == "option":
+                options = metadata.get("options")
+                if options:
+                    args = get_args(options)
+                    entry[f.name] = args[0] if args else None
+                else:
+                    entry[f.name] = None
+            else:
+                entry[f.name] = 0
+        entries.append(entry)
+
+    return entries
 
 
 def generate_expected_dict(
@@ -166,7 +373,7 @@ def generate_expected_dict(
 ) -> Dict:
     """Generate expected dict for a synthetic fixture.
 
-    Creates a dict with default/zero values matching what the parser
+    Creates a dict with realistic values matching what the parser
     should produce from the synthetic response.
 
     Args:
@@ -182,6 +389,14 @@ def generate_expected_dict(
     for f in fields(endpoint_class):
         metadata = f.metadata
         field_type = metadata.get("type", "")
+        names = metadata.get("name", [])
+
+        # Skip fields without iXX format names (they're not in the response)
+        has_ixx_name = any(
+            name.startswith("i") and len(name) >= 2 for name in names
+        )
+        if not has_ixx_name:
+            continue
 
         # Determine if this is a list field
         is_list_field = get_origin(f.type) is list or (
@@ -196,16 +411,26 @@ def generate_expected_dict(
                 inner_type = args[0]
 
         # Generate value based on type
-        if is_scalar or not is_list_field:
-            # Scalar values
+        # Note: is_list_field takes precedence - even sys.b has some list fields
+        if not is_list_field:
+            # Scalar values with realistic data
             if field_type == "str":
-                result[f.name] = ""
+                if f.name == "identity":
+                    result[f.name] = "TestSwitch"
+                elif f.name == "serial":
+                    result[f.name] = "SN00000001"
+                elif f.name == "model":
+                    result[f.name] = "CSS326"
+                elif f.name == "version":
+                    result[f.name] = "2.18"
+                else:
+                    result[f.name] = "Test"
             elif field_type == "mac":
-                result[f.name] = "00:00:00:00:00:00"
+                result[f.name] = "00:11:22:33:44:55"
             elif field_type == "ip":
-                result[f.name] = "0.0.0.0"
+                result[f.name] = "192.168.1.1"
             elif field_type == "bool" or field_type == "scalar_bool":
-                result[f.name] = False
+                result[f.name] = True
             elif field_type == "option":
                 # Get first option value
                 options = metadata.get("options")
@@ -222,16 +447,28 @@ def generate_expected_dict(
             else:
                 result[f.name] = 0
         else:
-            # List values
+            # List values with realistic data
             if field_type == "str":
+                if "name" in f.name.lower():
+                    # Port names
+                    result[f.name] = [
+                        generate_port_name(i + 1, port_count)
+                        for i in range(port_count)
+                    ]
+                elif "vendor" in f.name.lower():
+                    result[f.name] = ["Vendor"] * port_count
+                else:
+                    result[f.name] = [""] * port_count
+            elif field_type == "sfp_type":
+                # SFP type decodes to empty string for empty data
                 result[f.name] = [""] * port_count
             elif field_type == "mac" or field_type == "partner_mac":
-                result[f.name] = ["00:00:00:00:00:00"] * port_count
+                result[f.name] = ["00:11:22:33:44:55"] * port_count
             elif field_type == "ip" or field_type == "partner_ip":
-                result[f.name] = ["0.0.0.0"] * port_count
+                result[f.name] = ["192.168.1.1"] * port_count
             elif field_type == "bool":
-                result[f.name] = [False] * port_count
-            elif field_type == "option" or field_type == "bitshift_option":
+                result[f.name] = [True] * port_count
+            elif field_type in ("option", "bitshift_option", "bool_option"):
                 options = metadata.get("options")
                 if options:
                     args = get_args(options)
@@ -302,37 +539,59 @@ def generate_device_fixtures(
 
     # Generate fixtures for each endpoint the device supports
     for endpoint_path in device_endpoints:
-        if endpoint_path not in ENDPOINT_CLASSES:
+        if endpoint_path not in ALL_ENDPOINT_CLASSES:
             continue  # Skip unimplemented endpoints
 
-        endpoint_class = ENDPOINT_CLASSES[endpoint_path]
+        endpoint_class = ALL_ENDPOINT_CLASSES[endpoint_path]
         endpoint_dir = ENDPOINT_DIR_MAP.get(endpoint_path)
         if not endpoint_dir:
             continue
-
-        # Determine if scalar endpoint (sys.b)
-        is_scalar = endpoint_path == "sys.b"
 
         # Create endpoint directory
         endpoint_output = output_dir / endpoint_dir
         endpoint_output.mkdir(parents=True, exist_ok=True)
 
-        # Generate response file
-        response = generate_swos_response_for_endpoint(
-            endpoint_class, port_count, is_scalar
-        )
+        # Determine endpoint format
+        is_scalar = endpoint_path == "sys.b"
+        is_list = endpoint_path in LIST_ENDPOINTS
+
+        # Generate response and expected files
+        if is_list:
+            # List-based endpoint (host.b, vlan.b, igmp.b, acl.b, !dhost.b)
+            response = generate_list_response_for_entry(
+                endpoint_class, port_count, num_entries=1
+            )
+            expected = generate_list_expected_dict(
+                endpoint_class, port_count, num_entries=1
+            )
+        else:
+            # Per-port or scalar endpoint
+            response = generate_swos_response_for_endpoint(
+                endpoint_class, port_count, is_scalar
+            )
+            expected = generate_expected_dict(endpoint_class, port_count, is_scalar)
+
         response_file = endpoint_output / f"{model}_{version}_response_1.txt"
         response_file.write_text(response)
         created_files.append(str(response_file))
 
-        # Generate expected file
-        expected = generate_expected_dict(endpoint_class, port_count, is_scalar)
         expected_file = endpoint_output / f"{model}_{version}_response_1.expected"
-        # Format as Python dict literal
-        expected_text = "{\n"
-        for key, value in expected.items():
-            expected_text += f'    "{key}": {repr(value)},\n'
-        expected_text += "}\n"
+        # Format as Python literal (list for list endpoints, dict otherwise)
+        if is_list:
+            # List of entry dicts
+            expected_text = "[\n"
+            for entry in expected:
+                expected_text += "    {\n"
+                for key, value in entry.items():
+                    expected_text += f'        "{key}": {repr(value)},\n'
+                expected_text += "    },\n"
+            expected_text += "]\n"
+        else:
+            # Dict literal
+            expected_text = "{\n"
+            for key, value in expected.items():
+                expected_text += f'    "{key}": {repr(value)},\n'
+            expected_text += "}\n"
         expected_file.write_text(expected_text)
         created_files.append(str(expected_file))
 

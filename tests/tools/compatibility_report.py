@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Dict, List, Set, Tuple
 
 from tests.tools.compare_fields import (
-    ENDPOINT_CLASSES,
+    ALL_ENDPOINT_CLASSES,
     extract_field_ids,
     find_devices_with_endpoint,
     load_analysis_data,
@@ -66,7 +66,7 @@ def endpoint_coverage_table(analysis_data: List[dict]) -> str:
         total = full_count + lite_count
 
         # Mark implemented vs deferred
-        if endpoint in ENDPOINT_CLASSES:
+        if endpoint in ALL_ENDPOINT_CLASSES:
             status = ""
         elif endpoint in DEFERRED_ENDPOINTS:
             status = " (deferred)"
@@ -83,10 +83,10 @@ def field_coverage_section(endpoint_path: str, analysis_data: List[dict]) -> str
 
     Shows which fields are available in the dataclass and their device coverage.
     """
-    if endpoint_path not in ENDPOINT_CLASSES:
+    if endpoint_path not in ALL_ENDPOINT_CLASSES:
         return ""
 
-    endpoint_class = ENDPOINT_CLASSES[endpoint_path]
+    endpoint_class = ALL_ENDPOINT_CLASSES[endpoint_path]
     dataclass_fields = extract_field_ids(endpoint_class)
 
     devices = find_devices_with_endpoint(analysis_data, endpoint_path)
@@ -182,7 +182,7 @@ def generate_report(analysis_data: List[dict] = None) -> str:
     # Calculate stats
     total_devices = len(analysis_data)
     swos_full, swos_lite, full_models, lite_models = count_devices_by_type(analysis_data)
-    implemented_endpoints = len([ep for ep in ENDPOINT_CLASSES if ep != "stats.b"])  # Don't double-count alias
+    implemented_endpoints = len([ep for ep in ALL_ENDPOINT_CLASSES if ep != "stats.b"])  # Don't double-count alias
 
     # Build report
     lines = ["# Python-SwitchOS Compatibility Report"]
@@ -212,7 +212,7 @@ def generate_report(analysis_data: List[dict] = None) -> str:
     lines.append("Note: Analysis data contains a flat field dictionary per device firmware,")
     lines.append("not field-to-endpoint mappings. Coverage shows if field exists in firmware.")
 
-    for endpoint_path in sorted(ENDPOINT_CLASSES.keys()):
+    for endpoint_path in sorted(ALL_ENDPOINT_CLASSES.keys()):
         # Skip stats.b (it's an alias for !stats.b with same class)
         if endpoint_path == "stats.b":
             continue
