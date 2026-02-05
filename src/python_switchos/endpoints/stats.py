@@ -11,6 +11,8 @@ from python_switchos.endpoint import SwitchOSEndpoint, endpoint
 class StatsEndpoint(SwitchOSEndpoint):
     """Port statistics from the !stats.b endpoint.
 
+    Note: SwOS full 2.17+ uses stats.b (without ! prefix).
+
     Contains four categories of statistics per port:
 
     Rate fields:
@@ -34,6 +36,8 @@ class StatsEndpoint(SwitchOSEndpoint):
         hist_64, hist_65_127, hist_128_255, hist_256_511,
         hist_512_1023, hist_1024_max
     """
+
+    endpoint_alternates = ["stats.b"]
 
     # Rate fields (scale divides raw value)
     rx_rate: List[float] = field(metadata={"name": ["i21"], "type": "int", "scale": 0.32})

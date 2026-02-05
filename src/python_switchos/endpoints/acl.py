@@ -103,12 +103,17 @@ class AclStatsEndpoint(SwitchOSEndpoint):
     Contains 4 counter arrays corresponding to the 4 ACL accounting buckets (#1-#4).
     Each counter is a list of 10 integers (one per port).
 
+    Note: SwOS full uses aclstats.b (without ! prefix).
+
     Fields:
         counter_1: Packets matched by ACL rules with account_as="#1"
         counter_2: Packets matched by ACL rules with account_as="#2"
         counter_3: Packets matched by ACL rules with account_as="#3"
         counter_4: Packets matched by ACL rules with account_as="#4"
     """
+
+    endpoint_alternates = ["aclstats.b"]
+
     counter_1: List[int] = field(metadata={"name": ["i01"], "type": "int"})
     counter_2: List[int] = field(metadata={"name": ["i02"], "type": "int"})
     counter_3: List[int] = field(metadata={"name": ["i03"], "type": "int"})
