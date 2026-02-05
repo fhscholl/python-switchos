@@ -9,7 +9,7 @@ FIXTURE_DIR = Path(__file__).parent / "fixtures"
 _ENDPOINTS = {
     "acl": "acl_b",
     "aclstats": "!aclstats_b",
-    "dhost": "!dhost.b",
+    "dhost": "!dhost_b",
     "fwd": "fwd_b",
     "host": "host_b",
     "igmp": "igmp_b",

@@ -65,7 +65,7 @@ ENDPOINT_DIR_MAP = {
     "sfp.b": "sfp_b",
     "snmp.b": "snmp_b",
     "host.b": "host_b",
-    "!dhost.b": "!dhost.b",  # Keep dot in name
+    "!dhost.b": "!dhost_b",
     "!igmp.b": "igmp_b",
     "vlan.b": "vlan_b",
     "lacp.b": "lacp_b",
