@@ -6,6 +6,7 @@ for testing endpoint parsing across different device/version combinations.
 Usage:
     python3 -m tests.tools.generate_fixtures --model css326 --version 2.18 --port-count 24
     python3 -m tests.tools.generate_fixtures --model css326 --version 2.18 --output-dir tests/fixtures/css326_2.18
+    python3 -m tests.tools.generate_fixtures --all  # Generate for all SwOS and SwOS Lite devices
 """
 
 import argparse
@@ -20,6 +21,41 @@ from tests.tools.compare_fields import (
     load_analysis_data,
 )
 from python_switchos.endpoint import SwitchOSDataclass
+
+
+# Port counts by device model (from model names and specifications)
+# Note: Port numbers in model names are approximate - actual counts include SFP ports
+DEVICE_PORT_COUNTS = {
+    # SwOS models
+    "css106": 6,      # 5 + 1 SFP
+    "css305": 5,      # 4 + 1 SFP
+    "css305r2": 5,    # 4 + 1 SFP (revision 2)
+    "css309": 9,      # 8 + 1 SFP
+    "css310": 10,     # 8 + 2 SFP
+    "css310g": 10,    # 8 + 2 SFP (gigabit)
+    "css312": 12,     # 10 + 2 SFP
+    "css317": 17,     # 16 + 1 SFP
+    "css318fi": 18,   # 16 + 2 SFP (fiber input)
+    "css318g": 18,    # 16 + 2 SFP (gigabit)
+    "css318p": 18,    # 16 + 2 SFP (PoE)
+    "css320p": 20,    # 18 + 2 SFP (PoE)
+    "css326": 26,     # 24 + 2 SFP
+    "css326q": 26,    # 24 + 2 SFP (quiet)
+    "css326xg": 26,   # 24 + 2 SFP (10G)
+    "css328": 28,     # 24 + 4 SFP
+    "css328p": 28,    # 24 + 4 SFP (PoE)
+    "css354": 54,     # 48 + 6 SFP
+    # SwOS Lite models
+    "css606": 6,      # 5 + 1 SFP
+    "css610": 10,     # 8 + 2 SFP
+    "css610g": 10,    # 8 + 2 SFP (gigabit)
+    "css610out": 10,  # 8 + 2 SFP (outdoor)
+    "css610pi": 10,   # 8 + 2 SFP (passive PoE injector)
+    "ftc11xg": 11,    # 10 + 1 SFP (10G)
+    "ftc21": 21,      # 20 + 1 SFP
+    "gpen21": 21,     # 20 + 1 SFP (GPEN)
+    "gper14i": 14,    # 13 + 1 SFP (GPEN repeater)
+}
 
 
 # Map endpoint paths to fixture directory names (matching conftest.py _ENDPOINTS)
@@ -319,14 +355,25 @@ def generate_list_expected_dict(
 
     Returns format like: [{"port": 0, "mac": "..."}, ...]
 
+    NOTE: The parser uses max(port_count, bitmask.bit_length()) for bool lists.
+    Since we generate bitmasks with port_count bits set:
+    - If port_count > 10 (default), parser uses port_count
+    - If port_count <= 10, parser uses 10 (first port_count True, rest False)
+
     Args:
         entry_class: The entry dataclass type
-        port_count: Number of ports (for bool fields)
+        port_count: Number of ports on the device
         num_entries: Number of entries
 
     Returns:
         List of entry dicts
     """
+    # Parser uses max(default_port_count, bitmask.bit_length())
+    # Bitmask has port_count bits set, so:
+    # - If port_count > 10, parser detects port_count from bitmask
+    # - If port_count <= 10, parser defaults to 10
+    parsed_port_count = max(port_count, 10)
+
     entries = []
     for _ in range(num_entries):
         entry = {}
@@ -351,7 +398,9 @@ def generate_list_expected_dict(
             elif field_type == "scalar_bool":
                 entry[f.name] = True
             elif field_type == "bool" and is_list_field:
-                entry[f.name] = [True] * port_count
+                # Parser outputs parsed_port_count elements (default 10)
+                # First port_count bits are True, rest are False
+                entry[f.name] = [i < port_count for i in range(parsed_port_count)]
             elif field_type == "option":
                 options = metadata.get("options")
                 if options:
@@ -366,6 +415,27 @@ def generate_list_expected_dict(
     return entries
 
 
+def _endpoint_has_array_fields(endpoint_class: Type[SwitchOSDataclass]) -> bool:
+    """Check if endpoint has list fields that generate arrays (not bitmasks).
+
+    The parser auto-detects port count from arrays. If an endpoint only has
+    bitmask fields (bool lists), the parser defaults to 10 ports.
+
+    Args:
+        endpoint_class: The endpoint dataclass type
+
+    Returns:
+        True if the endpoint has array fields, False if only bitmasks
+    """
+    for f in fields(endpoint_class):
+        if get_origin(f.type) is list:
+            field_type = f.metadata.get("type", "")
+            # bool fields are bitmasks, others are arrays
+            if field_type != "bool":
+                return True
+    return False
+
+
 def generate_expected_dict(
     endpoint_class: Type[SwitchOSDataclass],
     port_count: int = 10,
@@ -376,14 +446,24 @@ def generate_expected_dict(
     Creates a dict with realistic values matching what the parser
     should produce from the synthetic response.
 
+    NOTE: The parser uses max(port_count, bitmask.bit_length()) for bool lists.
+    - If endpoint has arrays, parser detects port_count from array length
+    - If endpoint only has bitmasks, parser uses max(10, bitmask.bit_length())
+      Since we generate bitmasks with port_count bits, this is max(10, port_count)
+
     Args:
         endpoint_class: The endpoint dataclass type
-        port_count: Number of ports
+        port_count: Number of ports on the device
         is_scalar: If True, generate scalar expected values
 
     Returns:
         Dict mapping field names to expected values
     """
+    # If endpoint has arrays, parser detects port_count from them
+    # If only bitmasks, parser uses max(default=10, bitmask.bit_length())
+    has_arrays = _endpoint_has_array_fields(endpoint_class)
+    parsed_port_count = port_count if has_arrays else max(port_count, 10)
+
     result = {}
 
     for f in fields(endpoint_class):
@@ -448,47 +528,50 @@ def generate_expected_dict(
                 result[f.name] = 0
         else:
             # List values with realistic data
+            # For bool fields (bitmasks), first port_count bits are True, rest False
+            # Other array fields use parsed_port_count length
             if field_type == "str":
                 if "name" in f.name.lower():
                     # Port names
                     result[f.name] = [
-                        generate_port_name(i + 1, port_count)
-                        for i in range(port_count)
+                        generate_port_name(i + 1, parsed_port_count)
+                        for i in range(parsed_port_count)
                     ]
                 elif "vendor" in f.name.lower():
-                    result[f.name] = ["Vendor"] * port_count
+                    result[f.name] = ["Vendor"] * parsed_port_count
                 else:
-                    result[f.name] = [""] * port_count
+                    result[f.name] = [""] * parsed_port_count
             elif field_type == "sfp_type":
                 # SFP type decodes to empty string for empty data
-                result[f.name] = [""] * port_count
+                result[f.name] = [""] * parsed_port_count
             elif field_type == "mac" or field_type == "partner_mac":
-                result[f.name] = ["00:11:22:33:44:55"] * port_count
+                result[f.name] = ["00:11:22:33:44:55"] * parsed_port_count
             elif field_type == "ip" or field_type == "partner_ip":
-                result[f.name] = ["192.168.1.1"] * port_count
+                result[f.name] = ["192.168.1.1"] * parsed_port_count
             elif field_type == "bool":
-                result[f.name] = [True] * port_count
+                # Bitmask: first port_count bits are True, rest are False
+                result[f.name] = [i < port_count for i in range(parsed_port_count)]
             elif field_type in ("option", "bitshift_option", "bool_option"):
                 options = metadata.get("options")
                 if options:
                     args = get_args(options)
                     if args:
-                        result[f.name] = [args[0]] * port_count
+                        result[f.name] = [args[0]] * parsed_port_count
                     else:
-                        result[f.name] = [None] * port_count
+                        result[f.name] = [None] * parsed_port_count
                 else:
-                    result[f.name] = [None] * port_count
+                    result[f.name] = [None] * parsed_port_count
             elif field_type == "dbm":
-                result[f.name] = [0.0] * port_count
+                result[f.name] = [0.0] * parsed_port_count
             elif field_type in ("int", "uint64"):
                 # Check for scale (indicates float result)
                 scale = metadata.get("scale")
                 if scale and isinstance(scale, float):
-                    result[f.name] = [0.0] * port_count
+                    result[f.name] = [0.0] * parsed_port_count
                 else:
-                    result[f.name] = [0] * port_count
+                    result[f.name] = [0] * parsed_port_count
             else:
-                result[f.name] = [0] * port_count
+                result[f.name] = [0] * parsed_port_count
 
     return result
 
@@ -598,6 +681,61 @@ def generate_device_fixtures(
     return created_files
 
 
+def generate_all_device_fixtures(output_base: Path) -> Dict[str, List[str]]:
+    """Generate fixtures for all SwOS and SwOS Lite devices.
+
+    Skips SwOS Legacy (rb250, rb260) as they use a different protocol.
+
+    Args:
+        output_base: Base directory for fixtures (e.g., tests/fixtures)
+
+    Returns:
+        Dict mapping device/version keys to lists of created files
+    """
+    analysis_data = load_analysis_data()
+    results: Dict[str, List[str]] = {}
+
+    for entry in analysis_data:
+        os_type = entry.get("os", "")
+        model = entry.get("model", "")
+        version = entry.get("version", "")
+
+        # Skip SwOS Legacy (different protocol)
+        if os_type == "SWOS-LEGACY":
+            continue
+
+        # Skip if no model or version
+        if not model or not version:
+            continue
+
+        # Look up port count
+        model_lower = model.lower()
+        port_count = DEVICE_PORT_COUNTS.get(model_lower)
+        if port_count is None:
+            print(f"WARNING: No port count for {model}, skipping")
+            continue
+
+        # Generate fixtures
+        device_key = f"{model_lower}_{version}"
+        output_dir = output_base / device_key
+
+        try:
+            created = generate_device_fixtures(
+                model,
+                version,
+                output_dir,
+                port_count,
+            )
+            results[device_key] = created
+            print(f"  {device_key}: {len(created)} files")
+        except ValueError as e:
+            print(f"  {device_key}: ERROR - {e}")
+        except Exception as e:
+            print(f"  {device_key}: ERROR - {e}")
+
+    return results
+
+
 def main():
     """Run synthetic fixture generation."""
     parser = argparse.ArgumentParser(
@@ -606,13 +744,11 @@ def main():
     parser.add_argument(
         "--model", "-m",
         type=str,
-        required=True,
         help="Device model (e.g., css326)"
     )
     parser.add_argument(
         "--version", "-v",
         type=str,
-        required=True,
         help="Firmware version (e.g., 2.18)"
     )
     parser.add_argument(
@@ -626,7 +762,26 @@ def main():
         default=10,
         help="Number of ports (default: 10)"
     )
+    parser.add_argument(
+        "--all", "-a",
+        action="store_true",
+        help="Generate fixtures for all SwOS and SwOS Lite devices"
+    )
     args = parser.parse_args()
+
+    # Handle --all mode
+    if args.all:
+        output_base = Path(args.output_dir) if args.output_dir else Path("tests/fixtures")
+        print(f"Generating fixtures for all devices in {output_base}...")
+        results = generate_all_device_fixtures(output_base)
+        total_files = sum(len(files) for files in results.values())
+        print(f"\nGenerated fixtures for {len(results)} device/version combinations")
+        print(f"Total files: {total_files}")
+        return 0
+
+    # Single device mode - require model and version
+    if not args.model or not args.version:
+        parser.error("--model and --version are required (or use --all)")
 
     # Determine output directory
     if args.output_dir:
