@@ -6,7 +6,7 @@ from typing import List
 from python_switchos.endpoint import SwitchOSEndpoint, endpoint
 
 
-@endpoint("!stats.b")
+@endpoint("!stats.b", "stats.b")
 @dataclass
 class StatsEndpoint(SwitchOSEndpoint):
     """Port statistics from the !stats.b endpoint.
@@ -36,8 +36,6 @@ class StatsEndpoint(SwitchOSEndpoint):
         hist_64, hist_65_127, hist_128_255, hist_256_511,
         hist_512_1023, hist_1024_max
     """
-
-    endpoint_alternates = ["stats.b"]
 
     # Rate fields (scale divides raw value)
     rx_rate: List[float] = field(metadata={"name": ["i21"], "type": "int", "scale": 0.32})

@@ -18,10 +18,20 @@ from python_switchos.utils import (
 )
 
 
-def endpoint(path: str):
-    """Decorator to add an endpoint path to a class."""
+def endpoint(path: str, *alternates: str):
+    """Decorator to add an endpoint path and optional alternates to a class.
+
+    Args:
+        path: Primary endpoint path (e.g., "!stats.b")
+        *alternates: Optional alternate paths (e.g., "stats.b")
+
+    Example:
+        @endpoint("!stats.b", "stats.b")  # Primary path with one alternate
+        @endpoint("link.b")                # Primary path only
+    """
     def decorator(cls):
         cls.endpoint_path = path
+        cls.endpoint_alternates = list(alternates)
         return cls
     return decorator
 

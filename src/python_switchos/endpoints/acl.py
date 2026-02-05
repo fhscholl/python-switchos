@@ -95,7 +95,7 @@ class AclEndpoint(SwitchOSEndpoint):
     entries: List[AclEntry] = field(default_factory=list)
 
 
-@endpoint("!aclstats.b")
+@endpoint("!aclstats.b", "aclstats.b")
 @dataclass
 class AclStatsEndpoint(SwitchOSEndpoint):
     """ACL statistics from the !aclstats.b endpoint.
@@ -111,8 +111,6 @@ class AclStatsEndpoint(SwitchOSEndpoint):
         counter_3: Packets matched by ACL rules with account_as="#3"
         counter_4: Packets matched by ACL rules with account_as="#4"
     """
-
-    endpoint_alternates = ["aclstats.b"]
 
     counter_1: List[int] = field(metadata={"name": ["i01"], "type": "int"})
     counter_2: List[int] = field(metadata={"name": ["i02"], "type": "int"})
