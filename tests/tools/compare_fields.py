@@ -31,7 +31,7 @@ from python_switchos.endpoints.vlan import VlanEndpoint, VlanEntry
 # Path to analysis data
 ANALYSIS_PATH = Path("/ssd/source/mikrotik/analysis/all_analyses.json")
 
-# Mapping of endpoint paths to their classes
+# Mapping of primary endpoint paths to their classes
 # Note: Some endpoints use entry classes for list parsing
 ENDPOINT_CLASSES: Dict[str, Type[SwitchOSEndpoint | SwitchOSDataclass]] = {
     "link.b": LinkEndpoint,
@@ -45,11 +45,23 @@ ENDPOINT_CLASSES: Dict[str, Type[SwitchOSEndpoint | SwitchOSDataclass]] = {
     "lacp.b": LacpEndpoint,
     "rstp.b": RstpEndpoint,
     "!stats.b": StatsEndpoint,
-    "stats.b": StatsEndpoint,  # Alternate path for SwOS full
     "fwd.b": ForwardingEndpoint,
     "acl.b": AclEntry,  # Uses entry class
     "!aclstats.b": AclStatsEndpoint,
     "poe.b": PoEEndpoint,
+}
+
+# Alternate path mappings for endpoints with path variants
+# SwOS Lite uses ! prefix, SwOS full 2.17+ uses non-prefixed paths
+ENDPOINT_ALTERNATES: Dict[str, Type[SwitchOSEndpoint | SwitchOSDataclass]] = {
+    "stats.b": StatsEndpoint,      # SwOS full 2.17+ uses stats.b
+    "aclstats.b": AclStatsEndpoint,  # SwOS full uses aclstats.b
+}
+
+# Combined mapping of all paths (primary + alternates) to classes
+ALL_ENDPOINT_CLASSES: Dict[str, Type[SwitchOSEndpoint | SwitchOSDataclass]] = {
+    **ENDPOINT_CLASSES,
+    **ENDPOINT_ALTERNATES,
 }
 
 
@@ -142,13 +154,14 @@ def compare_endpoint(endpoint_path: str, analysis_data: List[dict]) -> dict:
             "field_coverage": {field_id: count of devices with this field}
         }
     """
-    if endpoint_path not in ENDPOINT_CLASSES:
+    # Use ALL_ENDPOINT_CLASSES to handle both primary and alternate paths
+    if endpoint_path not in ALL_ENDPOINT_CLASSES:
         return {
             "endpoint": endpoint_path,
             "error": f"No dataclass mapping for {endpoint_path}",
         }
 
-    endpoint_class = ENDPOINT_CLASSES[endpoint_path]
+    endpoint_class = ALL_ENDPOINT_CLASSES[endpoint_path]
     dataclass_fields = extract_field_ids(endpoint_class)
 
     # Find devices with this endpoint
