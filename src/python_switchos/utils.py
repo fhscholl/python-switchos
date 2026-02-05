@@ -12,7 +12,7 @@ def hex_to_bool_list(value: int, length: int = 24) -> List[bool]:
     Returns:
         List of booleans of the specified length.
     """
-    return [c == "1" for c in f"{value:0{length}b}"]
+    return [c == "1" for c in f"{value:0{length}b}"][::-1]
 
 def hex_to_str(value: str) -> str:
     """Converts a hex-encoded string to a UTF-8 decoded string.
@@ -23,7 +23,7 @@ def hex_to_str(value: str) -> str:
     Returns:
         The UTF-8 decoded string.
     """
-    return bytes.fromhex(value).decode()
+    return bytes.fromhex(value).decode().rstrip("\x00")
 
 def hex_to_option(value: int, type: Type) -> str | None:
     """Converts an integer into an option of a given Literal type.
@@ -49,6 +49,32 @@ def hex_to_mac(value: str) -> str:
         The MAC address formatted with colons.
     """
     return ":".join(re.findall("..", value.upper()))
+
+def process_int(value: int | List[int], signed: bool = False, bits: int = None, scale: int | float = None) -> int | float | List[int] | List[float]:
+    """Processes integer values with optional signed conversion and scaling.
+
+    Args:
+        value: The integer or list of integers to process.
+        signed: Whether to treat the value as signed.
+        bits: Number of bits for signed conversion.
+        scale: Divisor for scaling the value.
+
+    Returns:
+        The processed value(s).
+    """
+    if signed and bits:
+        half = 1 << (bits - 1)
+        full = 1 << bits
+        if isinstance(value, list):
+            value = [v - full if v >= half else v for v in value]
+        elif value >= half:
+            value = value - full
+    if scale is not None:
+        if isinstance(value, list):
+            value = [v / scale for v in value]
+        else:
+            value = value / scale
+    return value
 
 def hex_to_ip(value: int) -> str:
     """Converts an integer into its corresponding IPv4 address string.

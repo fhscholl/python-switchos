@@ -1,6 +1,6 @@
 from dataclasses import fields, is_dataclass
 from typing import ClassVar, Literal, cast, List, Type, TypeVar
-from python_switchos.utils import hex_to_bool_list, hex_to_ip, hex_to_mac, hex_to_option, hex_to_str, str_to_json
+from python_switchos.utils import hex_to_bool_list, hex_to_ip, hex_to_mac, hex_to_option, hex_to_str, process_int, str_to_json
 
 def endpoint(path: str):
     """Decorator to add an endpoint path to a class."""
@@ -36,11 +36,7 @@ def readDataclass(cls: Type[T], data: str) -> T:
             case "bool":
                 value = hex_to_bool_list(value, portCount)
             case "int":
-                if isinstance(metadata.get("scale"), (int, float)):
-                    if isinstance(value, list):
-                        value = list(map(lambda v: v / metadata.get("scale"), cast(List[int], value)))
-                    else:
-                        value = value / metadata.get("scale")
+                value = process_int(value, metadata.get("signed"), metadata.get("bits"), metadata.get("scale"))
             case "str":
                 if isinstance(value, list):
                     value = list(map(hex_to_str, cast(List[str], value)))
