@@ -25,27 +25,6 @@ _ENDPOINTS = {
 }
 
 
-def discover_fixtures(endpoint_dir):
-    """Discover response/expected fixture pairs in an endpoint directory.
-
-    Finds files matching *_response_*.txt and pairs each with its
-    .expected file (Python dict literal). Returns list of
-    (response_text, expected_dict, fixture_id) tuples.
-    """
-    path = FIXTURE_DIR / endpoint_dir
-    if not path.exists():
-        return []
-    pairs = []
-    for response_file in sorted(path.glob("*_response_*.txt")):
-        expected_file = response_file.with_suffix(".expected")
-        response_text = response_file.read_text()
-        expected_dict = None
-        if expected_file.exists():
-            expected_dict = ast.literal_eval(expected_file.read_text())
-        pairs.append((response_text, expected_dict, response_file.stem))
-    return pairs
-
-
 def discover_all_fixtures(endpoint_dir):
     """Discover fixtures across all device directories AND flat structure.
 
