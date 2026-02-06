@@ -1,5 +1,5 @@
 from dataclasses import fields, is_dataclass
-from typing import ClassVar, List, Literal, Type, TypeVar, cast
+from typing import Any, ClassVar, List, Literal, Type, TypeVar, cast, get_args
 
 from python_switchos.utils import (
     hex_to_bitshift_option,
@@ -15,6 +15,13 @@ from python_switchos.utils import (
     hex_to_str,
     process_int,
     str_to_json,
+    # Reverse converters for serialization
+    bool_list_to_hex,
+    int_to_hex,
+    str_to_hex,
+    mac_to_hex,
+    ip_to_hex,
+    option_to_hex,
 )
 
 
@@ -142,6 +149,82 @@ def _parse_dict(cls: Type[E], json_data: dict, port_count: int) -> E:
 
         result[f.name] = value
     return cls(**result)
+
+
+def _serialize_field(value: Any, metadata: dict, port_count: int) -> str | List[str] | None:
+    """Serialize field value to wire format.
+
+    Returns None if value should be skipped (None value or unsupported type).
+    """
+    if value is None:
+        return None
+
+    field_type: FieldType = cast(FieldType, metadata.get("type"))
+    match field_type:
+        case "bool":
+            return bool_list_to_hex(value)
+        case "scalar_bool":
+            return f"0x0{1 if value else 0}"
+        case "int":
+            scale = metadata.get("scale")
+            if isinstance(value, list):
+                return [int_to_hex(v, scale) for v in value]
+            return int_to_hex(value, scale)
+        case "uint64":
+            # uint64 fields are typically read-only (counters)
+            # If writable, serialize as low 32-bit only
+            if isinstance(value, list):
+                return [int_to_hex(v & 0xFFFFFFFF) for v in value]
+            return int_to_hex(value & 0xFFFFFFFF)
+        case "str":
+            if isinstance(value, list):
+                return [str_to_hex(v) for v in value]
+            return str_to_hex(value)
+        case "option":
+            options = metadata.get("options")
+            if isinstance(value, list):
+                return [option_to_hex(v, options) for v in value]
+            return option_to_hex(value, options)
+        case "bool_option":
+            # Convert option strings back to bitmask
+            options = metadata.get("options")
+            opts = get_args(options)
+            # opts[1] is true value, opts[0] is false
+            bitmask = sum(1 << i for i, v in enumerate(value) if v == opts[1])
+            return f"0x{bitmask:x}" if bitmask else "0x00"
+        case "bitshift_option":
+            # Two-bit options need low and high bitmasks
+            # This is complex - may need to return tuple or handle specially
+            # For now, skip (most bitshift fields are read-only)
+            return None
+        case "mac" | "partner_mac":
+            if isinstance(value, list):
+                return [mac_to_hex(v) for v in value]
+            return mac_to_hex(value)
+        case "ip" | "partner_ip":
+            if isinstance(value, list):
+                return [ip_to_hex(v) for v in value]
+            return ip_to_hex(value)
+        case "sfp_type" | "dbm":
+            # Read-only types
+            return None
+    return None
+
+
+def _build_wire_format(fields_dict: dict) -> str:
+    """Convert {field_id: wire_value} dict to wire format string.
+
+    Output format: {en:0x7ff,nm:['506f727431',...],an:0x7ff}
+    """
+    parts = []
+    for key, value in fields_dict.items():
+        if isinstance(value, list):
+            # Array values
+            items = ",".join(str(v) for v in value)
+            parts.append(f"{key}:[{items}]")
+        else:
+            parts.append(f"{key}:{value}")
+    return "{" + ",".join(parts) + "}"
 
 
 def readDataclass(cls: Type[T], data: str) -> T:
