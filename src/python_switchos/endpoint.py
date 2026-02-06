@@ -258,3 +258,64 @@ def readListDataclass(cls: Type[E], data: str) -> List[E]:
     port_count = len(first_arr) if first_arr else 10
 
     return [_parse_dict(cls, item, port_count) for item in json_array]
+
+
+def writeDataclass(instance: T, field_variant: int = 0) -> str:
+    """Serialize a dataclass instance to SwitchOS wire format.
+
+    Args:
+        instance: The dataclass instance to serialize.
+        field_variant: Which field name variant to use (0=SwOS Lite, 1=SwOS Full).
+                      Corresponds to index in metadata["name"] list.
+
+    Returns:
+        Wire format string like {en:0x7ff,nm:['506f727431',...]}
+
+    Raises:
+        TypeError: If instance is not a dataclass.
+        ValueError: If endpoint is read-only.
+    """
+    cls = type(instance)
+    if not is_dataclass(cls):
+        raise TypeError(f"{cls} is not a dataclass")
+
+    # Check endpoint-level read-only
+    if hasattr(cls, 'endpoint_readonly') and cls.endpoint_readonly:
+        raise ValueError(f"{cls.__name__} is a read-only endpoint")
+
+    # Auto-detect port count from first list field
+    port_count = 10
+    for f in fields(cls):
+        value = getattr(instance, f.name)
+        if isinstance(value, list) and value:
+            port_count = len(value)
+            break
+
+    # Build serialized fields dict
+    result = {}
+    for f in fields(cls):
+        metadata = f.metadata
+        if not metadata:
+            continue
+
+        # Skip non-writable fields
+        if not metadata.get("writable", True):
+            continue
+
+        # Get field name for wire format
+        names = metadata.get("name", [])
+        if not names:
+            continue
+        wire_name = names[min(field_variant, len(names) - 1)]
+
+        # Get field value
+        value = getattr(instance, f.name)
+        if value is None:
+            continue
+
+        # Serialize value
+        serialized = _serialize_field(value, metadata, port_count)
+        if serialized is not None:
+            result[wire_name] = serialized
+
+    return _build_wire_format(result)
