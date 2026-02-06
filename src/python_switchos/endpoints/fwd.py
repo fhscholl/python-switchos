@@ -47,37 +47,37 @@ class ForwardingEndpoint(SwitchOSEndpoint):
     """
 
     # Port isolation matrix (10 source ports)
-    from_port_1: List[bool] = field(metadata={"name": ["i01"], "type": "bool"})
-    from_port_2: List[bool] = field(metadata={"name": ["i02"], "type": "bool"})
-    from_port_3: List[bool] = field(metadata={"name": ["i03"], "type": "bool"})
-    from_port_4: List[bool] = field(metadata={"name": ["i04"], "type": "bool"})
-    from_port_5: List[bool] = field(metadata={"name": ["i05"], "type": "bool"})
-    from_port_6: List[bool] = field(metadata={"name": ["i06"], "type": "bool"})
-    from_port_7: List[bool] = field(metadata={"name": ["i07"], "type": "bool"})
-    from_port_8: List[bool] = field(metadata={"name": ["i08"], "type": "bool"})
-    from_port_9: List[bool] = field(metadata={"name": ["i09"], "type": "bool"})
-    from_port_10: List[bool] = field(metadata={"name": ["i0a"], "type": "bool"})
+    from_port_1: List[bool] = field(metadata={"name": ["i01"], "type": "bool", "writable": True})
+    from_port_2: List[bool] = field(metadata={"name": ["i02"], "type": "bool", "writable": True})
+    from_port_3: List[bool] = field(metadata={"name": ["i03"], "type": "bool", "writable": True})
+    from_port_4: List[bool] = field(metadata={"name": ["i04"], "type": "bool", "writable": True})
+    from_port_5: List[bool] = field(metadata={"name": ["i05"], "type": "bool", "writable": True})
+    from_port_6: List[bool] = field(metadata={"name": ["i06"], "type": "bool", "writable": True})
+    from_port_7: List[bool] = field(metadata={"name": ["i07"], "type": "bool", "writable": True})
+    from_port_8: List[bool] = field(metadata={"name": ["i08"], "type": "bool", "writable": True})
+    from_port_9: List[bool] = field(metadata={"name": ["i09"], "type": "bool", "writable": True})
+    from_port_10: List[bool] = field(metadata={"name": ["i0a"], "type": "bool", "writable": True})
 
     # Port lock fields
-    port_lock: List[bool] = field(metadata={"name": ["i10"], "type": "bool"})
-    lock_on_first: List[bool] = field(metadata={"name": ["i11"], "type": "bool"})
+    port_lock: List[bool] = field(metadata={"name": ["i10"], "type": "bool", "writable": True})
+    lock_on_first: List[bool] = field(metadata={"name": ["i11"], "type": "bool", "writable": True})
 
     # Port mirroring fields
-    mirror_ingress: List[bool] = field(metadata={"name": ["i12"], "type": "bool"})
-    mirror_egress: List[bool] = field(metadata={"name": ["i13"], "type": "bool"})
-    mirror_to: List[bool] = field(metadata={"name": ["i14"], "type": "bool"})
+    mirror_ingress: List[bool] = field(metadata={"name": ["i12"], "type": "bool", "writable": True})
+    mirror_egress: List[bool] = field(metadata={"name": ["i13"], "type": "bool", "writable": True})
+    mirror_to: List[bool] = field(metadata={"name": ["i14"], "type": "bool", "writable": True})
 
     # Rate limiting fields
-    storm_rate: List[int] = field(metadata={"name": ["i1a"], "type": "int"})
-    ingress_rate: List[int] = field(metadata={"name": ["i1d"], "type": "int"})
-    egress_rate: List[int] = field(metadata={"name": ["i1e"], "type": "int"})
+    storm_rate: List[int] = field(metadata={"name": ["i1a"], "type": "int", "writable": True})
+    ingress_rate: List[int] = field(metadata={"name": ["i1d"], "type": "int", "writable": True})
+    egress_rate: List[int] = field(metadata={"name": ["i1e"], "type": "int", "writable": True})
 
     # Flood/limit fields
-    limit_unknown_unicast: List[bool] = field(metadata={"name": ["i1b"], "type": "bool"})
-    flood_unknown_multicast: List[bool] = field(metadata={"name": ["i1c"], "type": "bool"})
+    limit_unknown_unicast: List[bool] = field(metadata={"name": ["i1b"], "type": "bool", "writable": True})
+    flood_unknown_multicast: List[bool] = field(metadata={"name": ["i1c"], "type": "bool", "writable": True})
 
     # VLAN fields
-    vlan_mode: List[str] = field(metadata={"name": ["i15"], "type": "option", "options": VlanMode})
-    vlan_receive: List[str] = field(metadata={"name": ["i17"], "type": "option", "options": VlanReceive})
-    default_vlan_id: List[int] = field(metadata={"name": ["i18"], "type": "int"})
-    force_vlan_id: List[bool] = field(metadata={"name": ["i19"], "type": "bool"})
+    vlan_mode: List[str] = field(metadata={"name": ["i15"], "type": "option", "options": VlanMode, "writable": True})
+    vlan_receive: List[str] = field(metadata={"name": ["i17"], "type": "option", "options": VlanReceive, "writable": True})
+    default_vlan_id: List[int] = field(metadata={"name": ["i18"], "type": "int", "writable": True})
+    force_vlan_id: List[bool] = field(metadata={"name": ["i19"], "type": "bool", "writable": True})

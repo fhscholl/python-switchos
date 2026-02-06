@@ -20,7 +20,7 @@ class LacpEndpoint(SwitchOSEndpoint):
         trunk: Current trunk assignment per port (read-only).
         partner: Partner MAC address per port (empty string if no partner).
     """
-    mode: List[LacpMode] = field(metadata={"name": ["i01"], "type": "option", "options": LacpMode})
-    group: List[int] = field(metadata={"name": ["i03"], "type": "int"})
-    trunk: List[int] = field(metadata={"name": ["i02"], "type": "int"})
-    partner: List[str] = field(metadata={"name": ["i04"], "type": "partner_mac"})
+    mode: List[LacpMode] = field(metadata={"name": ["i01"], "type": "option", "options": LacpMode, "writable": True})
+    group: List[int] = field(metadata={"name": ["i03"], "type": "int", "writable": True})
+    trunk: List[int] = field(metadata={"name": ["i02"], "type": "int", "writable": False})
+    partner: List[str] = field(metadata={"name": ["i04"], "type": "partner_mac", "writable": False})

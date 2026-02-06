@@ -12,8 +12,8 @@ class HostEntry(SwitchOSDataclass):
         port: Switch port number (0-indexed)
         mac: MAC address in AA:BB:CC:DD:EE:FF format
     """
-    port: int = field(metadata={"name": ["i02"], "type": "int"})
-    mac: str = field(metadata={"name": ["i01"], "type": "mac"})
+    port: int = field(metadata={"name": ["i02"], "type": "int", "writable": True})
+    mac: str = field(metadata={"name": ["i01"], "type": "mac", "writable": True})
 
 
 @endpoint("host.b")

@@ -49,40 +49,40 @@ class AclEntry(SwitchOSDataclass):
             account_as: Counter to account packets to
     """
     # Port matching
-    from_ports: List[bool] = field(metadata={"name": ["i01"], "type": "bool"})
+    from_ports: List[bool] = field(metadata={"name": ["i01"], "type": "bool", "writable": True})
 
     # L2 matching
-    mac_src: str = field(metadata={"name": ["i02"], "type": "partner_mac"})
-    mac_src_mask: str = field(metadata={"name": ["i03"], "type": "mac"})
-    mac_dst: str = field(metadata={"name": ["i04"], "type": "partner_mac"})
-    mac_dst_mask: str = field(metadata={"name": ["i05"], "type": "mac"})
-    ethertype: int = field(metadata={"name": ["i06"], "type": "int"})
+    mac_src: str = field(metadata={"name": ["i02"], "type": "partner_mac", "writable": True})
+    mac_src_mask: str = field(metadata={"name": ["i03"], "type": "mac", "writable": True})
+    mac_dst: str = field(metadata={"name": ["i04"], "type": "partner_mac", "writable": True})
+    mac_dst_mask: str = field(metadata={"name": ["i05"], "type": "mac", "writable": True})
+    ethertype: int = field(metadata={"name": ["i06"], "type": "int", "writable": True})
 
     # VLAN matching
-    vlan: VlanMatch = field(metadata={"name": ["i07"], "type": "option", "options": VlanMatch})
-    vlan_id: int = field(metadata={"name": ["i08"], "type": "int"})
-    priority: int = field(metadata={"name": ["i09"], "type": "int"})
+    vlan: VlanMatch = field(metadata={"name": ["i07"], "type": "option", "options": VlanMatch, "writable": True})
+    vlan_id: int = field(metadata={"name": ["i08"], "type": "int", "writable": True})
+    priority: int = field(metadata={"name": ["i09"], "type": "int", "writable": True})
 
     # IP matching
-    ip_src: str = field(metadata={"name": ["i0a"], "type": "partner_ip"})
-    ip_src_prefix: int = field(metadata={"name": ["i0b"], "type": "int"})
-    ip_src_port: int = field(metadata={"name": ["i0c"], "type": "int"})
-    ip_dst: str = field(metadata={"name": ["i0d"], "type": "partner_ip"})
-    ip_dst_prefix: int = field(metadata={"name": ["i0e"], "type": "int"})
-    ip_dst_port: int = field(metadata={"name": ["i0f"], "type": "int"})
-    protocol: int = field(metadata={"name": ["i10"], "type": "int"})
-    dscp: int = field(metadata={"name": ["i11"], "type": "int"})
+    ip_src: str = field(metadata={"name": ["i0a"], "type": "partner_ip", "writable": True})
+    ip_src_prefix: int = field(metadata={"name": ["i0b"], "type": "int", "writable": True})
+    ip_src_port: int = field(metadata={"name": ["i0c"], "type": "int", "writable": True})
+    ip_dst: str = field(metadata={"name": ["i0d"], "type": "partner_ip", "writable": True})
+    ip_dst_prefix: int = field(metadata={"name": ["i0e"], "type": "int", "writable": True})
+    ip_dst_port: int = field(metadata={"name": ["i0f"], "type": "int", "writable": True})
+    protocol: int = field(metadata={"name": ["i10"], "type": "int", "writable": True})
+    dscp: int = field(metadata={"name": ["i11"], "type": "int", "writable": True})
 
     # Actions
-    drop: bool = field(metadata={"name": ["i12"], "type": "scalar_bool"})
-    mirror_to: int = field(metadata={"name": ["i13"], "type": "int"})
-    redirect_to: int = field(metadata={"name": ["i14"], "type": "int"})
-    set_vlan_id: int = field(metadata={"name": ["i15"], "type": "int"})
-    set_priority: int = field(metadata={"name": ["i16"], "type": "int"})
-    set_dscp: int = field(metadata={"name": ["i17"], "type": "int"})
+    drop: bool = field(metadata={"name": ["i12"], "type": "scalar_bool", "writable": True})
+    mirror_to: int = field(metadata={"name": ["i13"], "type": "int", "writable": True})
+    redirect_to: int = field(metadata={"name": ["i14"], "type": "int", "writable": True})
+    set_vlan_id: int = field(metadata={"name": ["i15"], "type": "int", "writable": True})
+    set_priority: int = field(metadata={"name": ["i16"], "type": "int", "writable": True})
+    set_dscp: int = field(metadata={"name": ["i17"], "type": "int", "writable": True})
 
     # Accounting
-    account_as: AccountAs = field(metadata={"name": ["i18"], "type": "option", "options": AccountAs})
+    account_as: AccountAs = field(metadata={"name": ["i18"], "type": "option", "options": AccountAs, "writable": True})
 
 
 @endpoint("acl.b")
@@ -112,7 +112,7 @@ class AclStatsEndpoint(SwitchOSEndpoint):
         counter_4: Packets matched by ACL rules with account_as="#4"
     """
 
-    counter_1: List[int] = field(metadata={"name": ["i01"], "type": "int"})
-    counter_2: List[int] = field(metadata={"name": ["i02"], "type": "int"})
-    counter_3: List[int] = field(metadata={"name": ["i03"], "type": "int"})
-    counter_4: List[int] = field(metadata={"name": ["i04"], "type": "int"})
+    counter_1: List[int] = field(metadata={"name": ["i01"], "type": "int", "writable": False})
+    counter_2: List[int] = field(metadata={"name": ["i02"], "type": "int", "writable": False})
+    counter_3: List[int] = field(metadata={"name": ["i03"], "type": "int", "writable": False})
+    counter_4: List[int] = field(metadata={"name": ["i04"], "type": "int", "writable": False})

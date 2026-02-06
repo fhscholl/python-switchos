@@ -25,9 +25,9 @@ class RstpEndpoint(SwitchOSEndpoint):
         type: Port type (shared, point-to-point, edge) from combined i06/i07 bitmasks.
         state: Port state (discarding, learning, forwarding) from combined i08/i09 bitmasks.
     """
-    rstp: List[bool] = field(metadata={"name": ["i01"], "type": "bool"})
-    mode: List[str] = field(metadata={"name": ["i05"], "type": "bool_option", "options": RstpMode})
-    role: List[RstpRole] = field(metadata={"name": ["i02"], "type": "option", "options": RstpRole})
-    root_path_cost: List[int] = field(metadata={"name": ["i03"], "type": "int"})
-    type: List[str] = field(metadata={"name": ["i06"], "type": "bitshift_option", "pair": "i07", "options": RstpType})
-    state: List[str] = field(metadata={"name": ["i08"], "type": "bitshift_option", "pair": "i09", "options": RstpState})
+    rstp: List[bool] = field(metadata={"name": ["i01"], "type": "bool", "writable": True})
+    mode: List[str] = field(metadata={"name": ["i05"], "type": "bool_option", "options": RstpMode, "writable": False})
+    role: List[RstpRole] = field(metadata={"name": ["i02"], "type": "option", "options": RstpRole, "writable": False})
+    root_path_cost: List[int] = field(metadata={"name": ["i03"], "type": "int", "writable": False})
+    type: List[str] = field(metadata={"name": ["i06"], "type": "bitshift_option", "pair": "i07", "options": RstpType, "writable": False})
+    state: List[str] = field(metadata={"name": ["i08"], "type": "bitshift_option", "pair": "i09", "options": RstpState, "writable": False})

@@ -12,9 +12,9 @@ class VlanEntry(SwitchOSDataclass):
         igmp_snooping: Whether IGMP snooping is enabled for this VLAN
         members: Port membership list (index=port, True=member)
     """
-    vlan_id: int = field(metadata={"name": ["i01"], "type": "int"})
-    igmp_snooping: bool = field(metadata={"name": ["i03"], "type": "scalar_bool"})
-    members: List[bool] = field(metadata={"name": ["i02"], "type": "bool"})
+    vlan_id: int = field(metadata={"name": ["i01"], "type": "int", "writable": True})
+    igmp_snooping: bool = field(metadata={"name": ["i03"], "type": "scalar_bool", "writable": True})
+    members: List[bool] = field(metadata={"name": ["i02"], "type": "bool", "writable": True})
 
 
 @endpoint("vlan.b")
