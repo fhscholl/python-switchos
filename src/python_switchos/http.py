@@ -17,7 +17,11 @@ class HttpResponse(ABC):
 
 class HttpClient(ABC):
     @abstractmethod
-    async def get(self, url) -> HttpResponse:
+    async def get(self, url: str) -> HttpResponse:
+        pass
+
+    @abstractmethod
+    async def post(self, url: str, body: str) -> HttpResponse:
         pass
 
 try:
@@ -59,8 +63,16 @@ try:
         async def __aexit__(self, exc_type, exc_val, exc_tb):
             return await self.session.__aexit__(exc_type, exc_val, exc_tb)
         
-        async def get(self, url) -> HttpResponse:
+        async def get(self, url: str) -> HttpResponse:
             response = await self.session.get(url)
+            return AioHttpResponse(response)
+
+        async def post(self, url: str, body: str) -> HttpResponse:
+            response = await self.session.post(
+                url,
+                data=body,
+                headers={"Content-Type": "text/plain"}
+            )
             return AioHttpResponse(response)
 
 except ImportError:
@@ -104,10 +116,18 @@ try:
         async def __aexit__(self, exc_type, exc_val, exc_tb):
             return await self.client.__aexit__(exc_type, exc_val, exc_tb)
         
-        async def get(self, url) -> HttpResponse:
+        async def get(self, url: str) -> HttpResponse:
             response = await self.client.get(url)
             return HttpxResponse(response)
-            
+
+        async def post(self, url: str, body: str) -> HttpResponse:
+            response = await self.client.post(
+                url,
+                content=body,
+                headers={"Content-Type": "text/plain"}
+            )
+            return HttpxResponse(response)
+
 except ImportError:
     HttpxClient = None
 
