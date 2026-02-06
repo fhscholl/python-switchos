@@ -66,3 +66,42 @@ def filter_writable_fields(original: dict, endpoint_cls: Type[SwitchOSEndpoint])
                 writable_names.add(name)
 
     return {k: v for k, v in original.items() if k in writable_names}
+
+
+class TestRoundtripScalar:
+    """Round-trip tests for scalar (non-per-port) endpoints."""
+
+    def test_snmp_roundtrip(self):
+        """Test SNMP endpoint round-trip (all fields writable)."""
+        # Sample SNMP fixture
+        fixture = "{i01:0x01,i02:'7075626c6963',i03:'',i04:''}"
+
+        # Read -> Python dataclass
+        snmp = readDataclass(SnmpEndpoint, fixture)
+        assert snmp.enabled == True
+        assert snmp.community == "public"
+
+        # Python dataclass -> Wire format
+        serialized = writeDataclass(snmp)
+
+        # Compare (normalized)
+        original_norm = normalize_wire_format(fixture)
+        serialized_norm = normalize_wire_format(serialized)
+
+        # All SNMP fields are writable, so should match exactly
+        assert serialized_norm == original_norm
+
+    def test_snmp_with_data_roundtrip(self):
+        """Test SNMP with actual data values."""
+        fixture = "{i01:0x01,i02:'7075626c6963',i03:'61646d696e',i04:'6f6666696365'}"
+
+        snmp = readDataclass(SnmpEndpoint, fixture)
+        assert snmp.community == "public"
+        assert snmp.contact_info == "admin"
+        assert snmp.location == "office"
+
+        serialized = writeDataclass(snmp)
+
+        original_norm = normalize_wire_format(fixture)
+        serialized_norm = normalize_wire_format(serialized)
+        assert serialized_norm == original_norm
