@@ -210,3 +210,132 @@ def hex_to_dbm(value: int, scale: int = 10000) -> float:
     if value == 0:
         return 0.0
     return round(10 * math.log10(value / scale), 3)
+
+
+# =============================================================================
+# Reverse conversion functions (serialization: Python -> wire format)
+# =============================================================================
+
+
+def bool_list_to_hex(values: List[bool]) -> str:
+    """Converts a list of booleans to a hex bitmask string.
+
+    Bit N corresponds to index N in the list.
+    Example: [True, True, False, True] -> "0x0b" (binary 1011)
+
+    Args:
+        values: List of boolean values.
+
+    Returns:
+        Hex string with even-length formatting (e.g., "0x0f" not "0xf").
+    """
+    if not values:
+        return "0x00"
+    bitmask = sum(1 << i for i, v in enumerate(values) if v)
+    if bitmask == 0:
+        return "0x00"
+    hex_str = f"{bitmask:x}"
+    if len(hex_str) % 2 == 1:
+        hex_str = "0" + hex_str
+    return f"0x{hex_str}"
+
+
+def int_to_hex(value: int | float, scale: float = None) -> str:
+    """Converts an integer to wire format hex string.
+
+    Applies scale factor if present (multiply for write, opposite of read division).
+    Uses engine.js nibble formatting: ensures even hex digit count.
+
+    Args:
+        value: The integer or float to convert.
+        scale: Optional multiplier for the value.
+
+    Returns:
+        Hex string with even-length formatting (e.g., "0x0f" not "0xf").
+    """
+    if scale is not None:
+        value = int(value * scale)
+    else:
+        value = int(value)
+
+    if value == 0:
+        return "0x00"
+
+    hex_str = f"{value:x}"
+    if len(hex_str) % 2 == 1:
+        hex_str = "0" + hex_str
+    return f"0x{hex_str}"
+
+
+def str_to_hex(value: str) -> str:
+    """Converts a string to hex-encoded UTF-8, single-quoted.
+
+    Example: "Port1" -> "'506f727431'"
+
+    Args:
+        value: The string to convert.
+
+    Returns:
+        Single-quoted hex string.
+    """
+    if not value:
+        return "''"
+    hex_bytes = value.encode('utf-8').hex()
+    return f"'{hex_bytes}'"
+
+
+def mac_to_hex(value: str) -> str:
+    """Converts a MAC address to hex string, single-quoted.
+
+    Example: "AA:BB:CC:DD:EE:FF" -> "'aabbccddeeff'"
+
+    Args:
+        value: The MAC address with colons.
+
+    Returns:
+        Single-quoted lowercase hex string.
+    """
+    if not value:
+        return "''"
+    hex_only = value.replace(":", "").lower()
+    return f"'{hex_only}'"
+
+
+def ip_to_hex(value: str) -> str:
+    """Converts an IPv4 address to little-endian hex integer string.
+
+    Example: "192.168.88.1" -> "0x0158a8c0"
+
+    Args:
+        value: The IPv4 address in dotted-decimal notation.
+
+    Returns:
+        Hex string representing little-endian integer.
+    """
+    if not value:
+        return "0x00"
+    octets = [int(x) for x in value.split(".")]
+    int_val = octets[0] | (octets[1] << 8) | (octets[2] << 16) | (octets[3] << 24)
+    if int_val == 0:
+        return "0x00"
+    return int_to_hex(int_val)
+
+
+def option_to_hex(value: str, options_type: Type) -> str:
+    """Converts an option string to zero-based index hex.
+
+    Example: "1G" with options ["10M","100M","1G",...] -> "0x02"
+
+    Args:
+        value: The option string value.
+        options_type: A Literal type containing the possible options.
+
+    Returns:
+        Hex string representing the index (e.g., "0x02").
+    """
+    options = get_args(options_type)
+    try:
+        index = options.index(value)
+        return f"0x{index:02x}"
+    except ValueError:
+        return "0x00"
