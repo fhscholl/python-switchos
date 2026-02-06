@@ -3,7 +3,7 @@ from typing import List
 from python_switchos.endpoint import SwitchOSEndpoint, endpoint
 
 
-@endpoint("sfp.b")
+@endpoint("sfp.b", readonly=True)
 @dataclass
 class SfpEndpoint(SwitchOSEndpoint):
     """Represents the endpoint providing SFP module information and diagnostics.

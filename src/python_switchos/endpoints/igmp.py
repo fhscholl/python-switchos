@@ -17,7 +17,7 @@ class IgmpEntry(SwitchOSDataclass):
     member_ports: List[bool] = field(metadata={"name": ["i02"], "type": "bool", "writable": False})
 
 
-@endpoint("!igmp.b")
+@endpoint("!igmp.b", readonly=True)
 @dataclass
 class IgmpEndpoint(SwitchOSEndpoint):
     """Represents the IGMP snooping table endpoint.

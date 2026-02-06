@@ -95,7 +95,7 @@ class AclEndpoint(SwitchOSEndpoint):
     entries: List[AclEntry] = field(default_factory=list)
 
 
-@endpoint("!aclstats.b", "aclstats.b")
+@endpoint("!aclstats.b", "aclstats.b", readonly=True)
 @dataclass
 class AclStatsEndpoint(SwitchOSEndpoint):
     """ACL statistics from the !aclstats.b endpoint.

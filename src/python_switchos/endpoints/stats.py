@@ -6,7 +6,7 @@ from typing import List
 from python_switchos.endpoint import SwitchOSEndpoint, endpoint
 
 
-@endpoint("!stats.b", "stats.b")
+@endpoint("!stats.b", "stats.b", readonly=True)
 @dataclass
 class StatsEndpoint(SwitchOSEndpoint):
     """Port statistics from the !stats.b endpoint.

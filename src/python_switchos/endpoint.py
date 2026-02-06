@@ -18,20 +18,23 @@ from python_switchos.utils import (
 )
 
 
-def endpoint(path: str, *alternates: str):
+def endpoint(path: str, *alternates: str, readonly: bool = False):
     """Decorator to add an endpoint path and optional alternates to a class.
 
     Args:
         path: Primary endpoint path (e.g., "!stats.b")
         *alternates: Optional alternate paths (e.g., "stats.b")
+        readonly: If True, endpoint is read-only (no POST allowed)
 
     Example:
         @endpoint("!stats.b", "stats.b")  # Primary path with one alternate
         @endpoint("link.b")                # Primary path only
+        @endpoint("sfp.b", readonly=True)  # Read-only endpoint
     """
     def decorator(cls):
         cls.endpoint_path = path
         cls.endpoint_alternates = list(alternates)
+        cls.endpoint_readonly = readonly
         return cls
     return decorator
 
@@ -49,9 +52,12 @@ class SwitchOSEndpoint(SwitchOSDataclass):
         endpoint_alternates: Optional list of alternate paths (e.g., ["stats.b"])
                             for devices that use different conventions.
                             SwOS Lite uses ! prefix, SwOS full 2.17+ omits it.
+        endpoint_readonly: If True, endpoint is read-only (no POST allowed).
+                          Endpoints like sfp.b, !stats.b, !igmp.b are read-only.
     """
     endpoint_path: ClassVar[str]
     endpoint_alternates: ClassVar[List[str]] = []
+    endpoint_readonly: ClassVar[bool] = False
 
 
 T = TypeVar("T", bound=SwitchOSEndpoint)

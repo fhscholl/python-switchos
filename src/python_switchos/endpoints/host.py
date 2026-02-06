@@ -26,7 +26,7 @@ class HostEndpoint(SwitchOSEndpoint):
     entries: List[HostEntry] = field(default_factory=list)
 
 
-@endpoint("!dhost.b")
+@endpoint("!dhost.b", readonly=True)
 @dataclass
 class DynamicHostEndpoint(SwitchOSEndpoint):
     """Dynamic host table endpoint.
