@@ -358,3 +358,393 @@ class TestRoundtripFixtures:
                     pytest.fail(f"Round-trip failed for {device_dir.name}: {e}")
 
         assert tested > 0, "No Forwarding fixtures found"
+
+
+# ============================================================================
+# Client Integration Round-Trip Tests
+# ============================================================================
+
+
+class MockRoundtripClient:
+    """Mock client that simulates device round-trip behavior.
+
+    Stores POSTed data and returns it on subsequent fetches,
+    simulating the device's read-write-read cycle.
+    """
+
+    def __init__(self, initial_response: str, endpoint_cls: Type[SwitchOSEndpoint]):
+        self.current_response = initial_response
+        self.endpoint_cls = endpoint_cls
+
+    async def fetch(self):
+        """Fetch current state as dataclass."""
+        return readDataclass(self.endpoint_cls, self.current_response)
+
+    async def save(self, endpoint, field_variant: int = 0):
+        """Save endpoint and update internal state."""
+        # Serialize to wire format (this is what Client.save() does)
+        serialized = writeDataclass(endpoint, field_variant)
+        # Store as new state (simulates device accepting and storing the data)
+        self.current_response = serialized
+
+
+class TestClientIntegrationRoundtrip:
+    """Tests for fetch -> modify -> save -> fetch cycle using mock Client."""
+
+    @pytest.mark.asyncio
+    async def test_roundtrip_link_name_change(self):
+        """Modify port name, verify change persists through round-trip."""
+        # Initial fixture
+        fixture = "{i01:0x03,i0a:['506f727431','506f727432']}"  # Port1, Port2
+
+        mock_client = MockRoundtripClient(fixture, LinkEndpoint)
+
+        # Fetch
+        link = await mock_client.fetch()
+        assert link.name == ["Port1", "Port2"]
+
+        # Modify
+        link.name[0] = "Uplink"
+
+        # Save
+        await mock_client.save(link)
+
+        # Fetch again
+        link2 = await mock_client.fetch()
+
+        # Verify modification persisted
+        assert link2.name[0] == "Uplink"
+        assert link2.name[1] == "Port2"
+        assert link2.enabled == link.enabled
+
+    @pytest.mark.asyncio
+    async def test_roundtrip_link_enabled_toggle(self):
+        """Toggle enabled flag, verify change persists."""
+        # Hex: 5031 = "P1", 5032 = "P2"
+        fixture = "{i01:0x03,i0a:['5031','5032']}"  # Both enabled
+
+        mock_client = MockRoundtripClient(fixture, LinkEndpoint)
+
+        # Fetch
+        link = await mock_client.fetch()
+        assert link.enabled == [True, True]
+
+        # Modify - disable first port
+        link.enabled[0] = False
+
+        # Save
+        await mock_client.save(link)
+
+        # Fetch again
+        link2 = await mock_client.fetch()
+
+        # Verify modification persisted
+        assert link2.enabled == [False, True]
+
+    @pytest.mark.asyncio
+    async def test_roundtrip_preserves_unchanged_fields(self):
+        """Unchanged fields remain the same through round-trip."""
+        # Hex: 5031 = "P1", 5032 = "P2"
+        fixture = "{i01:0x03,i0a:['5031','5032'],i02:0x01}"  # enabled, name, auto_neg
+
+        mock_client = MockRoundtripClient(fixture, LinkEndpoint)
+
+        # Fetch
+        link = await mock_client.fetch()
+        original_enabled = link.enabled.copy()
+        original_auto_neg = link.auto_negotiation.copy() if link.auto_negotiation else None
+
+        # Modify only name
+        link.name[0] = "Changed"
+
+        # Save
+        await mock_client.save(link)
+
+        # Fetch again
+        link2 = await mock_client.fetch()
+
+        # Verify unchanged fields preserved
+        assert link2.enabled == original_enabled
+        if original_auto_neg:
+            assert link2.auto_negotiation == original_auto_neg
+
+    @pytest.mark.asyncio
+    async def test_roundtrip_multiple_changes(self):
+        """Multiple field changes all persist."""
+        # Hex: 5031 = "P1", 5032 = "P2"
+        fixture = "{i01:0x03,i0a:['5031','5032']}"
+
+        mock_client = MockRoundtripClient(fixture, LinkEndpoint)
+
+        # Fetch
+        link = await mock_client.fetch()
+
+        # Multiple modifications
+        link.name[0] = "Uplink"
+        link.name[1] = "Server"
+        link.enabled[0] = False
+
+        # Save
+        await mock_client.save(link)
+
+        # Fetch again
+        link2 = await mock_client.fetch()
+
+        # Verify all changes persisted
+        assert link2.name == ["Uplink", "Server"]
+        assert link2.enabled == [False, True]
+
+    @pytest.mark.asyncio
+    async def test_roundtrip_list_field_partial_change(self):
+        """Changing one list element preserves others."""
+        # Hex: 5031 = "P1", 5032 = "P2", 5033 = "P3"
+        fixture = "{i01:0x07,i0a:['5031','5032','5033']}"  # 3 ports
+
+        mock_client = MockRoundtripClient(fixture, LinkEndpoint)
+
+        # Fetch
+        link = await mock_client.fetch()
+        assert link.name == ["P1", "P2", "P3"]
+
+        # Modify only middle element
+        link.name[1] = "Changed"
+
+        # Save
+        await mock_client.save(link)
+
+        # Fetch again
+        link2 = await mock_client.fetch()
+
+        # Verify only middle changed
+        assert link2.name[0] == "P1"
+        assert link2.name[1] == "Changed"
+        assert link2.name[2] == "P3"
+
+    @pytest.mark.asyncio
+    async def test_roundtrip_bool_field(self):
+        """Boolean values round-trip correctly."""
+        fixture = "{i01:0x05,i0a:['','','']}"  # 0b101 = [T, F, T]
+
+        mock_client = MockRoundtripClient(fixture, LinkEndpoint)
+
+        # Fetch
+        link = await mock_client.fetch()
+        assert link.enabled == [True, False, True]
+
+        # Toggle middle port
+        link.enabled[1] = True  # Now all enabled
+
+        # Save
+        await mock_client.save(link)
+
+        # Fetch again
+        link2 = await mock_client.fetch()
+
+        # Verify toggle persisted
+        assert link2.enabled == [True, True, True]
+
+    @pytest.mark.asyncio
+    async def test_roundtrip_string_field(self):
+        """String values round-trip correctly (including special chars)."""
+        fixture = "{i01:0x01,i0a:['506f727431']}"  # "Port1"
+
+        mock_client = MockRoundtripClient(fixture, LinkEndpoint)
+
+        # Fetch
+        link = await mock_client.fetch()
+        assert link.name == ["Port1"]
+
+        # Change to different string
+        link.name[0] = "Test-01"
+
+        # Save
+        await mock_client.save(link)
+
+        # Fetch again
+        link2 = await mock_client.fetch()
+
+        # Verify string preserved exactly
+        assert link2.name[0] == "Test-01"
+
+    @pytest.mark.asyncio
+    async def test_roundtrip_option_field(self):
+        """Option (Literal) values round-trip correctly."""
+        # i05 = man_speed: 0x02 = "1G"
+        fixture = "{i01:0x01,i0a:[''],i05:[0x02]}"
+
+        mock_client = MockRoundtripClient(fixture, LinkEndpoint)
+
+        # Fetch
+        link = await mock_client.fetch()
+        assert link.man_speed == ["1G"]
+
+        # Change speed option
+        link.man_speed[0] = "100M"
+
+        # Save
+        await mock_client.save(link)
+
+        # Fetch again
+        link2 = await mock_client.fetch()
+
+        # Verify option preserved
+        assert link2.man_speed == ["100M"]
+
+    @pytest.mark.asyncio
+    async def test_roundtrip_with_css610_fixture(self):
+        """Round-trip using actual CSS610 fixture data."""
+        fixtures_dir = Path(__file__).parent / "fixtures"
+        # Find a CSS610 link fixture
+        for device_dir in sorted(fixtures_dir.iterdir()):
+            if not device_dir.name.startswith("css") or not device_dir.is_dir():
+                continue
+
+            link_dir = device_dir / "link_b"
+            if not link_dir.exists():
+                continue
+
+            for response_file in sorted(link_dir.glob("*_response_*.txt")):
+                fixture = response_file.read_text()
+                if not fixture.strip() or fixture.startswith("<!"):
+                    continue
+
+                # Use this fixture for round-trip test
+                mock_client = MockRoundtripClient(fixture, LinkEndpoint)
+
+                # Fetch
+                link = await mock_client.fetch()
+                original_name = link.name.copy() if link.name else None
+
+                if original_name and len(original_name) > 0:
+                    # Modify first port name
+                    link.name[0] = "TestPort"
+
+                    # Save
+                    await mock_client.save(link)
+
+                    # Fetch again
+                    link2 = await mock_client.fetch()
+
+                    # Verify modification persisted
+                    assert link2.name[0] == "TestPort"
+
+                    # Other names unchanged
+                    for i in range(1, len(original_name)):
+                        assert link2.name[i] == original_name[i], f"name[{i}] changed unexpectedly"
+
+                    # Test passed, return
+                    return
+
+        pytest.skip("No suitable CSS link fixtures found")
+
+    @pytest.mark.asyncio
+    async def test_roundtrip_serialization_matches_fixture_format(self):
+        """writeDataclass output is parseable by readDataclass."""
+        # Create a dataclass from scratch
+        link = LinkEndpoint(
+            enabled=[True, False, True, True],
+            name=["Uplink", "PC1", "Server", "Backup"],
+            auto_negotiation=[True, True, False, True],
+            man_speed=["1G", "100M", "1G", "1G"],
+        )
+
+        # Serialize
+        serialized = writeDataclass(link)
+
+        # Parse serialized back
+        link2 = readDataclass(LinkEndpoint, serialized)
+
+        # All values should match
+        assert link2.enabled == link.enabled
+        assert link2.name == link.name
+        assert link2.auto_negotiation == link.auto_negotiation
+        assert link2.man_speed == link.man_speed
+
+    @pytest.mark.asyncio
+    async def test_roundtrip_snmp_scalar_endpoint(self):
+        """Round-trip with scalar (non-list) endpoint."""
+        fixture = "{i01:0x01,i02:'7075626c6963',i03:'',i04:''}"
+
+        mock_client = MockRoundtripClient(fixture, SnmpEndpoint)
+
+        # Fetch
+        snmp = await mock_client.fetch()
+        assert snmp.community == "public"
+        assert snmp.enabled == True
+
+        # Modify
+        snmp.community = "private"
+        snmp.contact_info = "admin"
+
+        # Save
+        await mock_client.save(snmp)
+
+        # Fetch again
+        snmp2 = await mock_client.fetch()
+
+        # Verify modifications persisted
+        assert snmp2.community == "private"
+        assert snmp2.contact_info == "admin"
+        assert snmp2.enabled == True  # Unchanged
+
+    @pytest.mark.asyncio
+    async def test_roundtrip_forwarding_complex_endpoint(self):
+        """Round-trip with complex endpoint (many fields)."""
+        # Create ForwardingEndpoint with specific values
+        fwd = ForwardingEndpoint(
+            from_port_1=[True, True, True, True],
+            from_port_2=[True, True, True, True],
+            from_port_3=[True, True, True, True],
+            from_port_4=[True, True, True, True],
+            from_port_5=[True, True, True, True],
+            from_port_6=[True, True, True, True],
+            from_port_7=[True, True, True, True],
+            from_port_8=[True, True, True, True],
+            from_port_9=[True, True, True, True],
+            from_port_10=[True, True, True, True],
+            port_lock=[False, True, False, True],
+            lock_on_first=[False, False, False, False],
+            mirror_ingress=[False, False, False, False],
+            mirror_egress=[False, False, False, False],
+            mirror_to=[False, False, False, False],
+            storm_rate=[0, 100, 200, 0],
+            ingress_rate=[0, 0, 0, 0],
+            egress_rate=[0, 0, 0, 0],
+            limit_unknown_unicast=[True, True, True, True],
+            flood_unknown_multicast=[True, True, True, True],
+            vlan_mode=["disabled", "optional", "strict", "disabled"],
+            vlan_receive=["any", "any", "only tagged", "any"],
+            default_vlan_id=[1, 10, 20, 1],
+            force_vlan_id=[False, True, True, False],
+        )
+
+        # First serialize (simulate initial fetch)
+        initial_wire = writeDataclass(fwd)
+
+        mock_client = MockRoundtripClient(initial_wire, ForwardingEndpoint)
+
+        # Fetch
+        fwd_fetched = await mock_client.fetch()
+
+        # Modify several fields
+        fwd_fetched.port_lock[0] = True
+        fwd_fetched.storm_rate[0] = 50
+        fwd_fetched.vlan_mode[0] = "strict"
+        fwd_fetched.default_vlan_id[0] = 100
+
+        # Save
+        await mock_client.save(fwd_fetched)
+
+        # Fetch again
+        fwd2 = await mock_client.fetch()
+
+        # Verify modifications persisted
+        assert fwd2.port_lock[0] == True
+        assert fwd2.storm_rate[0] == 50
+        assert fwd2.vlan_mode[0] == "strict"
+        assert fwd2.default_vlan_id[0] == 100
+
+        # Verify unchanged fields preserved
+        assert fwd2.port_lock[1] == True  # Original
+        assert fwd2.storm_rate[2] == 200  # Original
+        assert fwd2.vlan_mode[2] == "strict"  # Original
