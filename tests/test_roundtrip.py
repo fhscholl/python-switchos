@@ -230,3 +230,131 @@ class TestRoundtripPerPort:
         link2 = readDataclass(LinkEndpoint, serialized)
 
         assert link2.enabled == original_bools
+
+
+class TestRoundtripFixtures:
+    """Round-trip tests against real fixture files."""
+
+    @pytest.fixture
+    def fixtures_dir(self):
+        """Return path to fixtures directory."""
+        return Path(__file__).parent / "fixtures"
+
+    def test_snmp_fixture_roundtrip(self, fixtures_dir):
+        """Test round-trip against SNMP fixture files."""
+        # Find device fixtures with SNMP data
+        device_dirs = [d for d in fixtures_dir.iterdir()
+                       if d.is_dir() and not d.name.startswith('!')]
+
+        tested = 0
+        for device_dir in device_dirs:
+            snmp_dir = device_dir / "snmp_b"
+            if not snmp_dir.exists():
+                continue
+
+            for response_file in sorted(snmp_dir.glob("*_response_*.txt")):
+                fixture = response_file.read_text()
+
+                # Skip empty or error fixtures
+                if not fixture.strip() or fixture.startswith("<!"):
+                    continue
+
+                try:
+                    # Read -> dataclass
+                    snmp = readDataclass(SnmpEndpoint, fixture)
+
+                    # Dataclass -> wire format
+                    serialized = writeDataclass(snmp)
+
+                    # Read again
+                    snmp2 = readDataclass(SnmpEndpoint, serialized)
+
+                    # Verify values survive
+                    assert snmp2.enabled == snmp.enabled, f"enabled mismatch in {device_dir.name}"
+                    assert snmp2.community == snmp.community, f"community mismatch in {device_dir.name}"
+                    assert snmp2.contact_info == snmp.contact_info, f"contact_info mismatch in {device_dir.name}"
+                    assert snmp2.location == snmp.location, f"location mismatch in {device_dir.name}"
+                    tested += 1
+                except Exception as e:
+                    pytest.fail(f"Round-trip failed for {device_dir.name}: {e}")
+
+        assert tested > 0, "No SNMP fixtures found"
+
+    def test_link_fixture_roundtrip(self, fixtures_dir):
+        """Test round-trip against Link fixture files."""
+        device_dirs = [d for d in fixtures_dir.iterdir()
+                       if d.is_dir() and not d.name.startswith('!')]
+
+        tested = 0
+        for device_dir in device_dirs:
+            link_dir = device_dir / "link_b"
+            if not link_dir.exists():
+                continue
+
+            for response_file in sorted(link_dir.glob("*_response_*.txt")):
+                fixture = response_file.read_text()
+
+                # Skip empty or error fixtures
+                if not fixture.strip() or fixture.startswith("<!"):
+                    continue
+
+                try:
+                    # Read -> dataclass
+                    link = readDataclass(LinkEndpoint, fixture)
+
+                    # Dataclass -> wire format
+                    serialized = writeDataclass(link)
+
+                    # Read again
+                    link2 = readDataclass(LinkEndpoint, serialized)
+
+                    # Verify writable values survive
+                    assert link2.enabled == link.enabled, f"enabled mismatch in {device_dir.name}"
+                    assert link2.name == link.name, f"name mismatch in {device_dir.name}"
+                    if link.auto_negotiation is not None:
+                        assert link2.auto_negotiation == link.auto_negotiation
+                    if link.man_speed is not None:
+                        assert link2.man_speed == link.man_speed
+                    tested += 1
+                except Exception as e:
+                    pytest.fail(f"Round-trip failed for {device_dir.name}: {e}")
+
+        assert tested > 0, "No Link fixtures found"
+
+    def test_fwd_fixture_roundtrip(self, fixtures_dir):
+        """Test round-trip against Forwarding fixture files."""
+        device_dirs = [d for d in fixtures_dir.iterdir()
+                       if d.is_dir() and not d.name.startswith('!')]
+
+        tested = 0
+        for device_dir in device_dirs:
+            fwd_dir = device_dir / "fwd_b"
+            if not fwd_dir.exists():
+                continue
+
+            for response_file in sorted(fwd_dir.glob("*_response_*.txt")):
+                fixture = response_file.read_text()
+
+                # Skip empty or error fixtures
+                if not fixture.strip() or fixture.startswith("<!"):
+                    continue
+
+                try:
+                    # Read -> dataclass
+                    fwd = readDataclass(ForwardingEndpoint, fixture)
+
+                    # Dataclass -> wire format
+                    serialized = writeDataclass(fwd)
+
+                    # Read again
+                    fwd2 = readDataclass(ForwardingEndpoint, serialized)
+
+                    # Verify key fields survive
+                    assert fwd2.from_port_1 == fwd.from_port_1, f"from_port_1 mismatch in {device_dir.name}"
+                    assert fwd2.port_lock == fwd.port_lock, f"port_lock mismatch in {device_dir.name}"
+                    assert fwd2.default_vlan_id == fwd.default_vlan_id, f"default_vlan_id mismatch in {device_dir.name}"
+                    tested += 1
+                except Exception as e:
+                    pytest.fail(f"Round-trip failed for {device_dir.name}: {e}")
+
+        assert tested > 0, "No Forwarding fixtures found"
